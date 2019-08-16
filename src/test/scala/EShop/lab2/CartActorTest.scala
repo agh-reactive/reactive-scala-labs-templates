@@ -1,28 +1,28 @@
 package EShop.lab2
 
-import EShop.lab2.Cart.{AddItem, CancelCheckout, CloseCheckout, RemoveItem, StartCheckout}
-import akka.actor.{ActorSystem, Cancellable, Props}
+import EShop.lab2.CartActor.{AddItem, CancelCheckout, CloseCheckout, RemoveItem, StartCheckout}
+import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
 
 import scala.concurrent.duration._
 
-class CartTest extends TestKit(ActorSystem("CheckoutTest"))
+class CartActorTest
+  extends TestKit(ActorSystem("CheckoutTest"))
   with FlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll {
 
-  override def afterAll: Unit = {
+  override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
-  }
 
-  import CartTest._
+  import CartActorTest._
 
   it should "change state after adding first item to the cart" in {
     val nonEmptyTestMsg = "changedStateToNonEmpty"
 
-    val cart = system.actorOf(Props(new Cart {
-      override def nonEmpty(cart: Cart.Storage, timer: Cancellable): Receive = {
+    val cart = system.actorOf(Props(new CartActor {
+      override def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
         sender ! nonEmptyTestMsg
         super.nonEmpty(cart, timer)
       }
@@ -113,52 +113,56 @@ class CartTest extends TestKit(ActorSystem("CheckoutTest"))
     expectNoMessage
   }
 
-   it should "not change state to inCheckout from empty" in {
+  it should "not change state to inCheckout from empty" in {
     val cart = cartActorWithCartSizeResponseOnStateChange(system)
 
     cart ! StartCheckout
     expectNoMessage()
   }
 
-   it should "expire and back to empty state after given time" in {
-     val cart = cartActorWithCartSizeResponseOnStateChange(system)
+  it should "expire and back to empty state after given time" in {
+    val cart = cartActorWithCartSizeResponseOnStateChange(system)
 
-     cart ! AddItem("King Lear")
-     expectMsg(nonEmptyMsg)
-     expectMsg(1)
-     Thread.sleep(1500)
-     cart ! AddItem("King Lear")
-     expectMsg(nonEmptyMsg)
-     expectMsg(1)
-   }
+    cart ! AddItem("King Lear")
+    expectMsg(nonEmptyMsg)
+    expectMsg(1)
+    Thread.sleep(1500)
+    cart ! AddItem("King Lear")
+    expectMsg(nonEmptyMsg)
+    expectMsg(1)
+  }
 }
 
-object CartTest {
-  val emptyMsg = "empty"
-  val nonEmptyMsg = "nonEmpty"
+object CartActorTest {
+  val emptyMsg      = "empty"
+  val nonEmptyMsg   = "nonEmpty"
   val inCheckoutMsg = "inCheckout"
 
-  def cartActorWithCartSizeResponseOnStateChange(system: ActorSystem) = system.actorOf(Props(new Cart {
-    override val cartTimerDuration: FiniteDuration = 1.seconds
+  def cartActorWithCartSizeResponseOnStateChange(system: ActorSystem): ActorRef =
+    system.actorOf(Props(new CartActor {
+      override val cartTimerDuration: FiniteDuration = 1.seconds
 
-    override def empty() = {
-      val result = super.empty
-      sender ! emptyMsg
-      sender ! 0
-      result
-    }
-    override def nonEmpty(cart: Cart.Storage, timer: Cancellable): Receive = {
-      val result = super.nonEmpty(cart, timer)
-      sender ! nonEmptyMsg
-      sender ! cart.size
-      result
-    }
-    override def inCheckout(cart: Cart.Storage): Receive = {
-      val result = super.inCheckout(cart)
-      sender ! inCheckoutMsg
-      sender ! cart.size
-      result
-    }
-  }))
+      override def empty() = {
+        val result = super.empty
+        sender ! emptyMsg
+        sender ! 0
+        result
+      }
+
+      override def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
+        val result = super.nonEmpty(cart, timer)
+        sender ! nonEmptyMsg
+        sender ! cart.size
+        result
+      }
+
+      override def inCheckout(cart: Cart): Receive = {
+        val result = super.inCheckout(cart)
+        sender ! inCheckoutMsg
+        sender ! cart.size
+        result
+      }
+
+    }))
 
 }

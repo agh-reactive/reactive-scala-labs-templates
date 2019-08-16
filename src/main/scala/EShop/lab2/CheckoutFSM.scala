@@ -1,12 +1,11 @@
 package EShop.lab2
 
-import EShop.lab2.Checkout.{CancelCheckout, Data, ExpireCheckout, ExpirePayment, ProcessingPaymentStarted, ReceivePayment, SelectDeliveryMethod, SelectPayment, SelectingDeliveryStarted, StartCheckout, Uninitialized}
+import EShop.lab2.Checkout.{Data, Uninitialized}
+import EShop.lab2.CheckoutFSM.Status
 import akka.actor.LoggingFSM
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import EShop.lab2.CheckoutFSM.Status
 
 object CheckoutFSM {
 
@@ -19,9 +18,12 @@ object CheckoutFSM {
 
 class CheckoutFSM extends LoggingFSM[Status.Value, Data] {
   import EShop.lab2.CheckoutFSM.Status._
+
+  // useful for debugging, see: https://doc.akka.io/docs/akka/current/fsm.html#rolling-event-log
   override def logDepth = 12
+
   val checkoutTimerDuration: FiniteDuration = 1 seconds
-  val paymentTimerDuration: FiniteDuration = 1 seconds
+  val paymentTimerDuration: FiniteDuration  = 1 seconds
 
   private val scheduler = context.system.scheduler
 
