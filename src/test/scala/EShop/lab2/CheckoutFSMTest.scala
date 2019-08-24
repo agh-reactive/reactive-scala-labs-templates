@@ -8,14 +8,14 @@ import EShop.lab2.CheckoutFSM.Status._
 
 import scala.concurrent.duration.{FiniteDuration, _}
 
-class CheckoutFSMTest extends TestKit(ActorSystem("CheckoutTest"))
+class CheckoutFSMTest
+  extends TestKit(ActorSystem("CheckoutTest"))
   with FlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll {
 
-  override def afterAll: Unit = {
+  override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
-  }
   import CheckoutFSMTest._
 
   it should "be in selectingDelivery state after checkout start" in {
@@ -154,39 +154,41 @@ class CheckoutFSMTest extends TestKit(ActorSystem("CheckoutTest"))
 
 object CheckoutFSMTest {
 
-  val emptyMsg = "empty"
-  val selectingDeliveryMsg = "selectingDelivery"
+  val emptyMsg                  = "empty"
+  val selectingDeliveryMsg      = "selectingDelivery"
   val selectingPaymentMethodMsg = "selectingPaymentMethod"
-  val processingPaymentMsg = "processingPayment"
-  val cancelledMsg = "cancelled"
-  val closedMsg = "closed"
+  val processingPaymentMsg      = "processingPayment"
+  val cancelledMsg              = "cancelled"
+  val closedMsg                 = "closed"
 
-  def checkoutActorWithResponseOnStateChange(system: ActorSystem) = system.actorOf(Props(new CheckoutFSM {
+  def checkoutActorWithResponseOnStateChange(system: ActorSystem) =
+    system.actorOf(Props(new CheckoutFSM {
 
-    onTransition {
-      case NotStarted -> SelectingDelivery => {
-        sender ! selectingDeliveryMsg
+      onTransition {
+        case NotStarted -> SelectingDelivery =>
+          sender ! selectingDeliveryMsg
+
+        case SelectingDelivery -> SelectingPaymentMethod =>
+          sender ! selectingPaymentMethodMsg
+
+        case SelectingPaymentMethod -> ProcessingPayment =>
+          sender ! processingPaymentMsg
+
+        case ProcessingPayment -> Closed =>
+          sender ! closedMsg
+
+        case ProcessingPayment -> Cancelled =>
+          sender ! cancelledMsg
+
+        case SelectingPaymentMethod -> Cancelled =>
+          sender ! cancelledMsg
+
+        case SelectingDelivery -> Cancelled =>
+          sender ! cancelledMsg
+
+        case SelectingDelivery -> Cancelled =>
+          sender ! cancelledMsg
+
       }
-      case SelectingDelivery -> SelectingPaymentMethod => {
-        sender ! selectingPaymentMethodMsg
-      }
-      case SelectingPaymentMethod -> ProcessingPayment => {
-        sender ! processingPaymentMsg
-      }
-      case ProcessingPayment -> Closed => {
-        sender ! closedMsg
-      }
-      case ProcessingPayment -> Cancelled => {
-        sender ! cancelledMsg
-      }
-      case SelectingPaymentMethod -> Cancelled => {
-        sender ! cancelledMsg
-      }
-      case SelectingDelivery -> Cancelled => {
-        sender ! cancelledMsg
-      }
-      case SelectingDelivery -> Cancelled => {
-        sender ! cancelledMsg
-      }
-  }}))
+    }))
 }

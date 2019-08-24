@@ -1,19 +1,19 @@
 package EShop.lab2
 
-import EShop.lab2.Cart.{AddItem, CancelCheckout, CloseCheckout, RemoveItem, StartCheckout}
+import EShop.lab2.CartActor.{AddItem, CancelCheckout, CloseCheckout, RemoveItem, StartCheckout}
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
 import EShop.lab2.CartFSM.Status._
 
-class CartFSMTest extends TestKit(ActorSystem("CheckoutTest"))
+class CartFSMTest
+  extends TestKit(ActorSystem("CheckoutTest"))
   with FlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll {
 
-  override def afterAll: Unit = {
+  override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
-  }
 
   import CartFSMTest._
 
@@ -121,33 +121,33 @@ class CartFSMTest extends TestKit(ActorSystem("CheckoutTest"))
 
 object CartFSMTest {
 
-  val emptyMsg = "empty"
-  val nonEmptyMsg = "nonEmpty"
+  val emptyMsg      = "empty"
+  val nonEmptyMsg   = "nonEmpty"
   val inCheckoutMsg = "inCheckout"
 
-  def cartActorWithCartSizeResponseOnStateChange(system: ActorSystem) = system.actorOf(Props(new CartFSM {
+  def cartActorWithCartSizeResponseOnStateChange(system: ActorSystem) =
+    system.actorOf(Props(new CartFSM {
 
-    onTransition {
-      case Empty -> NonEmpty => {
-        sender ! nonEmptyMsg
-        sender ! stateData.size
+      onTransition {
+        case Empty -> NonEmpty => {
+          sender ! nonEmptyMsg
+          sender ! stateData.size
+        }
+        case NonEmpty -> InCheckout => {
+          sender ! inCheckoutMsg
+          sender ! stateData.size
+        }
+        case NonEmpty -> Empty => {
+          sender ! emptyMsg
+          sender ! stateData.size
+        }
+        case InCheckout -> NonEmpty => {
+          sender ! nonEmptyMsg
+          sender ! stateData.size
+        }
+        case InCheckout -> Empty =>
+          sender ! emptyMsg
+          sender ! stateData.size
       }
-      case NonEmpty -> InCheckout => {
-        sender ! inCheckoutMsg
-        sender ! stateData.size
-      }
-      case NonEmpty -> Empty => {
-        sender ! emptyMsg
-        sender ! stateData.size
-      }
-      case InCheckout -> NonEmpty => {
-        sender ! nonEmptyMsg
-        sender ! stateData.size
-      }
-      case InCheckout -> Empty => {
-        sender ! emptyMsg
-        sender ! stateData.size
-      }
-    }
-  }))
+    }))
 }
