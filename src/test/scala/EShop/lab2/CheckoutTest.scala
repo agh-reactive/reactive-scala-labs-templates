@@ -9,9 +9,12 @@ import scala.concurrent.duration.{FiniteDuration, _}
 
 class CheckoutTest
   extends TestKit(ActorSystem("CheckoutTest"))
-  with FlatSpecLike
-  with ImplicitSender
-  with BeforeAndAfterAll {
+    with FlatSpecLike
+    with ImplicitSender
+    with BeforeAndAfterAll {
+
+  val deliveryMethod = "post"
+  val paymentMethod = "paypal"
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -44,7 +47,7 @@ class CheckoutTest
 
     checkoutActor ! StartCheckout
     Thread.sleep(2000)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(cancelledMsg)
   }
 
@@ -53,7 +56,7 @@ class CheckoutTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
   }
 
@@ -62,7 +65,7 @@ class CheckoutTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     checkoutActor ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -78,9 +81,9 @@ class CheckoutTest
     }))
 
     checkoutActor ! StartCheckout
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     Thread.sleep(2000)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(cancelledMsg)
   }
 
@@ -89,9 +92,9 @@ class CheckoutTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
   }
 
@@ -100,9 +103,9 @@ class CheckoutTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
     checkoutActor ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -118,8 +121,8 @@ class CheckoutTest
     }))
 
     checkoutActor ! StartCheckout
-    checkoutActor ! SelectDeliveryMethod
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
+    checkoutActor ! SelectPayment(paymentMethod)
     Thread.sleep(2000)
     checkoutActor ! ReceivePayment
     expectMsg(cancelledMsg)
@@ -130,9 +133,9 @@ class CheckoutTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
     checkoutActor ! ReceivePayment
     expectMsg(closedMsg)
@@ -143,9 +146,9 @@ class CheckoutTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
     checkoutActor ! ReceivePayment
     expectMsg(closedMsg)

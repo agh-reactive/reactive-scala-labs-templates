@@ -1,7 +1,7 @@
 package EShop.lab2
 
 import EShop.lab2.CartFSM.Status
-import akka.actor.LoggingFSM
+import akka.actor.{LoggingFSM, Props}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -13,6 +13,7 @@ object CartFSM {
     val Empty, NonEmpty, InCheckout = Value
   }
 
+  def props() = Props(new CartFSM())
 }
 
 class CartFSM extends LoggingFSM[Status.Value, Cart] {

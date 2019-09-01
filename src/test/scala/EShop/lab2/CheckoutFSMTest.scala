@@ -1,18 +1,20 @@
 package EShop.lab2
 
-import EShop.lab2.Checkout.{CancelCheckout, ReceivePayment, SelectDeliveryMethod, SelectPayment, StartCheckout}
-import akka.actor.{ActorSystem, Props}
-import akka.testkit.{ImplicitSender, TestKit}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
+import EShop.lab2.Checkout._
 import EShop.lab2.CheckoutFSM.Status._
-
-import scala.concurrent.duration.{FiniteDuration, _}
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.testkit.{ImplicitSender, TestFSMRef, TestKit}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 class CheckoutFSMTest
   extends TestKit(ActorSystem("CheckoutTest"))
-  with FlatSpecLike
-  with ImplicitSender
-  with BeforeAndAfterAll {
+    with Matchers
+    with FlatSpecLike
+    with ImplicitSender
+    with BeforeAndAfterAll {
+
+  val deliveryMethod = "post"
+  val paymentMethod = "paypal"
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -35,18 +37,12 @@ class CheckoutFSMTest
   }
 
   it should "be in cancelled state after expire checkout timeout in selectingDelivery state" in {
-    val checkoutActor = system.actorOf(Props(new Checkout {
-      override val checkoutTimerDuration: FiniteDuration = 1.seconds
-
-      override def cancelled: Receive = {
-        case any => sender ! cancelledMsg
-      }
-    }))
+    val checkoutActor = TestFSMRef[Status, Data, CheckoutFSM](new CheckoutFSM())
 
     checkoutActor ! StartCheckout
     Thread.sleep(2000)
-    checkoutActor ! SelectDeliveryMethod
-    expectMsg(cancelledMsg)
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
+    checkoutActor.stateName shouldBe Cancelled
   }
 
   it should "be in selectingPayment state after delivery method selected" in {
@@ -54,7 +50,7 @@ class CheckoutFSMTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
   }
 
@@ -63,7 +59,7 @@ class CheckoutFSMTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     checkoutActor ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -74,10 +70,10 @@ class CheckoutFSMTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     Thread.sleep(3000)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectNoMessage()
   }
 
@@ -86,9 +82,9 @@ class CheckoutFSMTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
   }
 
@@ -97,29 +93,23 @@ class CheckoutFSMTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
     checkoutActor ! CancelCheckout
     expectMsg(cancelledMsg)
   }
 
   it should "be in cancelled state after expire checkout timeout in processingPayment state" in {
-    val checkoutActor = system.actorOf(Props(new Checkout {
-      override val paymentTimerDuration: FiniteDuration = 1.seconds
-
-      override def cancelled: Receive = {
-        case any => sender ! cancelledMsg
-      }
-    }))
+    val checkoutActor = TestFSMRef[Status, Data, CheckoutFSM](new CheckoutFSM())
 
     checkoutActor ! StartCheckout
-    checkoutActor ! SelectDeliveryMethod
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
+    checkoutActor ! SelectPayment(paymentMethod)
     Thread.sleep(2000)
     checkoutActor ! ReceivePayment
-    expectMsg(cancelledMsg)
+    checkoutActor.stateName shouldBe Cancelled
   }
 
   it should "be in closed state after payment completed" in {
@@ -127,9 +117,9 @@ class CheckoutFSMTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
     checkoutActor ! ReceivePayment
     expectMsg(closedMsg)
@@ -140,9 +130,9 @@ class CheckoutFSMTest
 
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod
+    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment
+    checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
     checkoutActor ! ReceivePayment
     expectMsg(closedMsg)
@@ -161,7 +151,7 @@ object CheckoutFSMTest {
   val cancelledMsg              = "cancelled"
   val closedMsg                 = "closed"
 
-  def checkoutActorWithResponseOnStateChange(system: ActorSystem) =
+  def checkoutActorWithResponseOnStateChange(system: ActorSystem): ActorRef =
     system.actorOf(Props(new CheckoutFSM {
 
       onTransition {

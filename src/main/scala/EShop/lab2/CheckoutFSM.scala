@@ -2,7 +2,7 @@ package EShop.lab2
 
 import EShop.lab2.Checkout.{Data, Uninitialized}
 import EShop.lab2.CheckoutFSM.Status
-import akka.actor.LoggingFSM
+import akka.actor.{ActorRef, LoggingFSM, Props}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -14,6 +14,7 @@ object CheckoutFSM {
     val NotStarted, SelectingDelivery, SelectingPaymentMethod, Cancelled, ProcessingPayment, Closed = Value
   }
 
+  def props(cartActor: ActorRef) = Props(new CheckoutFSM)
 }
 
 class CheckoutFSM extends LoggingFSM[Status.Value, Data] {

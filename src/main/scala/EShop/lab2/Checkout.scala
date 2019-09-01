@@ -1,6 +1,6 @@
 package EShop.lab2
 
-import akka.actor.{Actor, ActorRef, Cancellable}
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.event.Logging
 
 import scala.concurrent.duration._
@@ -26,6 +26,7 @@ object Checkout {
   case object CheckOutClosed                   extends Event
   case class PaymentStarted(payment: ActorRef) extends Event
 
+  def props(cart: ActorRef) = Props(new Checkout())
 }
 
 class Checkout extends Actor {
@@ -33,8 +34,8 @@ class Checkout extends Actor {
   private val scheduler = context.system.scheduler
   private val log       = Logging(context.system, this)
 
-  val checkoutTimerDuration = 5 seconds
-  val paymentTimerDuration  = 5 seconds
+  val checkoutTimerDuration = 1 seconds
+  val paymentTimerDuration  = 1 seconds
 
   def receive: Receive = ???
 

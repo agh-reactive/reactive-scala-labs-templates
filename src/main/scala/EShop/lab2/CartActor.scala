@@ -19,7 +19,7 @@ object CartActor {
   sealed trait Event
   case class CheckoutStarted(checkoutRef: ActorRef) extends Event
 
-  def props = Props(new CartActor)
+  def props = Props(new CartActor())
 }
 
 class CartActor extends Actor {
