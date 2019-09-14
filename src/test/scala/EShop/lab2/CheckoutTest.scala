@@ -9,13 +9,13 @@ import scala.concurrent.duration.{FiniteDuration, _}
 
 class CheckoutTest
   extends TestKit(ActorSystem("CheckoutTest"))
-    with FlatSpecLike
-    with ImplicitSender
-    with BeforeAndAfterAll {
+  with FlatSpecLike
+  with ImplicitSender
+  with BeforeAndAfterAll {
 
-  val cartActor = TestProbe().ref
+  val cartActor      = TestProbe().ref
   val deliveryMethod = "post"
-  val paymentMethod = "paypal"
+  val paymentMethod  = "paypal"
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -96,9 +96,9 @@ class CheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     checkoutActor ! SelectPayment(paymentMethod)
-    fishForMessage(){
+    fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _ : PaymentStarted => false
+      case _: PaymentStarted                      => false
     }
   }
 
@@ -110,9 +110,9 @@ class CheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     checkoutActor ! SelectPayment(paymentMethod)
-    fishForMessage(){
+    fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _ : PaymentStarted => false
+      case _: PaymentStarted                      => false
     }
     checkoutActor ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -132,9 +132,9 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     Thread.sleep(2000)
     checkoutActor ! ReceivePayment
-    fishForMessage(){
+    fishForMessage() {
       case m: String if m == cancelledMsg => true
-      case _ : PaymentStarted => false
+      case _: PaymentStarted              => false
     }
   }
 
@@ -146,9 +146,9 @@ class CheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     checkoutActor ! SelectPayment(paymentMethod)
-    fishForMessage(){
+    fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _ : PaymentStarted => false
+      case _: PaymentStarted                      => false
     }
     checkoutActor ! ReceivePayment
     expectMsg(closedMsg)
@@ -162,9 +162,9 @@ class CheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     checkoutActor ! SelectPayment(paymentMethod)
-    fishForMessage(){
+    fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _ : PaymentStarted => false
+      case _: PaymentStarted                      => false
     }
     checkoutActor ! ReceivePayment
     expectMsg(closedMsg)
