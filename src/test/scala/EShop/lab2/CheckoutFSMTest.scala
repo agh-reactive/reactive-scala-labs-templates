@@ -8,13 +8,13 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 class CheckoutFSMTest
   extends TestKit(ActorSystem("CheckoutTest"))
-    with Matchers
-    with FlatSpecLike
-    with ImplicitSender
-    with BeforeAndAfterAll {
+  with Matchers
+  with FlatSpecLike
+  with ImplicitSender
+  with BeforeAndAfterAll {
 
   val deliveryMethod = "post"
-  val paymentMethod = "paypal"
+  val paymentMethod  = "paypal"
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)

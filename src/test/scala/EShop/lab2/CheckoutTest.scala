@@ -9,12 +9,12 @@ import scala.concurrent.duration.{FiniteDuration, _}
 
 class CheckoutTest
   extends TestKit(ActorSystem("CheckoutTest"))
-    with FlatSpecLike
-    with ImplicitSender
-    with BeforeAndAfterAll {
+  with FlatSpecLike
+  with ImplicitSender
+  with BeforeAndAfterAll {
 
   val deliveryMethod = "post"
-  val paymentMethod = "paypal"
+  val paymentMethod  = "paypal"
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
