@@ -11,7 +11,8 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class PaymentTest extends TestKit(ActorSystem("PaymentTest"))
+class PaymentTest
+  extends TestKit(ActorSystem("PaymentTest"))
   with FlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll
@@ -22,9 +23,9 @@ class PaymentTest extends TestKit(ActorSystem("PaymentTest"))
     TestKit.shutdownActorSystem(system)
 
   it should "properly confirm payment after 2 retries using payu payment method" in {
-    val manager    = TestProbe()
-    val checkout    = TestProbe()
-    val payment = TestActorRef(Payment.props("payu", manager.ref, checkout.ref))
+    val manager  = TestProbe()
+    val checkout = TestProbe()
+    val payment  = TestActorRef(Payment.props("payu", manager.ref, checkout.ref))
 
     val server = new PaymentServiceServer()
     Future { server.run() }
@@ -38,4 +39,3 @@ class PaymentTest extends TestKit(ActorSystem("PaymentTest"))
   }
 
 }
-

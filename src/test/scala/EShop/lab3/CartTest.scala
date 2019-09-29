@@ -11,7 +11,7 @@ class CartTest
   with ImplicitSender
   with BeforeAndAfterAll
   with Matchers
-  with ScalaFutures{
+  with ScalaFutures {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
