@@ -1,0 +1,12 @@
+image: hseeberger/scala-sbt:8u222_1.3.2_2.13.1
+
+variables:
+  SBT_VERSION: "1.3.2"
+
+stages:
+  - test
+
+test:
+  stage: test
+  script:
+    - sbt clean test
