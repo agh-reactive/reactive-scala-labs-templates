@@ -7,11 +7,11 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 class CartFSMTest
   extends TestKit(ActorSystem("CartTest"))
-    with FlatSpecLike
-    with ImplicitSender
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaFutures{
+  with FlatSpecLike
+  with ImplicitSender
+  with BeforeAndAfterAll
+  with Matchers
+  with ScalaFutures {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
