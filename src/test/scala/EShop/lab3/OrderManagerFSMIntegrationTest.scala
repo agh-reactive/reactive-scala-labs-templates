@@ -16,11 +16,11 @@ class OrderManagerFSMIntegrationTest
   with ImplicitSender
   with BeforeAndAfterAll
   with Matchers
-  with ScalaFutures{
+  with ScalaFutures {
 
   implicit val timeout: Timeout = 1.second
 
- it should "supervise whole order process" in {
+  it should "supervise whole order process" in {
 
     def sendMessageAndValidateState(
       orderManager: TestFSMRef[State, Data, OrderManagerFSM],
@@ -42,8 +42,8 @@ class OrderManagerFSMIntegrationTest
 
     sendMessageAndValidateState(orderManager, Pay, Finished)
 
-   (orderManager ? Pay).mapTo[String].futureValue shouldBe "order manager finished job"
-   orderManager.stateName shouldBe Finished
+    (orderManager ? Pay).mapTo[String].futureValue shouldBe "order manager finished job"
+    orderManager.stateName shouldBe Finished
   }
 
 }

@@ -7,11 +7,11 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 class CheckoutFSMTest
   extends TestKit(ActorSystem("CheckoutTest"))
-    with FlatSpecLike
-    with ImplicitSender
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaFutures{
+  with FlatSpecLike
+  with ImplicitSender
+  with BeforeAndAfterAll
+  with Matchers
+  with ScalaFutures {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -19,6 +19,5 @@ class CheckoutFSMTest
   it should "Send close confirmation to cart" in {
     ???
   }
-
 
 }
