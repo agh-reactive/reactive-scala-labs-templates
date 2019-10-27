@@ -8,8 +8,6 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object CheckoutFSM {
-  sealed trait Data
-
   object Status extends Enumeration {
     type Status = Value
     val NotStarted, SelectingDelivery, SelectingPaymentMethod, Cancelled, ProcessingPayment, Closed = Value
