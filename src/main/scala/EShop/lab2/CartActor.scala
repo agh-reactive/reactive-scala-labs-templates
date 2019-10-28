@@ -73,7 +73,6 @@ class CartActor extends Actor {
   def inCheckout(cart: Cart): Receive = {
     case CancelCheckout => context.become(nonEmpty(cart, scheduleTimer))
     case CloseCheckout  => context.become(empty)
-
   }
 
 }
