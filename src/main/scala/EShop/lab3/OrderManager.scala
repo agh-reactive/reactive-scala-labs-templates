@@ -38,13 +38,16 @@ class OrderManager extends Actor {
 
   override def receive = uninitialized
 
-  def uninitialized: Receive = {
-    val cartRef: ActorRef = context.system.actorOf(Props(new CartActor))
-    sender ! Done
-    open(cartRef)
+  def uninitialized: Receive = LoggingReceive.withLabel("Uninitialized"){
+    case AddItem(item) => {
+      val cartRef: ActorRef = context.system.actorOf(CartActor.props)
+      cartRef ! CartActor.AddItem(item)
+      sender ! Done
+      context.become(open(cartRef))
+    }
   }
 
-  def open(cartActor: ActorRef): Receive = {
+  def open(cartActor: ActorRef): Receive = LoggingReceive.withLabel("Open"){
     case AddItem(item) => {
       cartActor ! CartActor.AddItem(item)
       sender ! Done
@@ -55,18 +58,18 @@ class OrderManager extends Actor {
     }
     case Buy => {
       cartActor ! CartActor.StartCheckout
-      context.become(inCheckout(cartActor))
+      context.become(inCheckout(cartActor, sender))
     }
   }
 
-  def inCheckout(cartActorRef: ActorRef, senderRef: ActorRef): Receive = {
+  def inCheckout(cartActorRef: ActorRef, senderRef: ActorRef): Receive = LoggingReceive.withLabel("In checkout started"){
     case CartActor.CheckoutStarted(checkoutRef) => {
       senderRef ! Done
       context.become(inCheckout(checkoutRef))
     }
   }
 
-  def inCheckout(checkoutActorRef: ActorRef): Receive = {
+  def inCheckout(checkoutActorRef: ActorRef): Receive = LoggingReceive.withLabel("In checkout"){
     case SelectDeliveryAndPaymentMethod(delivery, payment) => {
       checkoutActorRef ! Checkout.SelectDeliveryMethod(delivery)
       checkoutActorRef ! Checkout.SelectPayment(payment)
@@ -74,7 +77,7 @@ class OrderManager extends Actor {
     }
   }
 
-  def inPayment(senderRef: ActorRef): Receive = {
+  def inPayment(senderRef: ActorRef): Receive = LoggingReceive.withLabel("In payment started"){
     case Checkout.PaymentStarted(paymentRef) => {
       senderRef ! Done
       context.become(inPayment(paymentRef, senderRef))
@@ -82,8 +85,8 @@ class OrderManager extends Actor {
 
   }
 
-  def inPayment(paymentActorRef: ActorRef, senderRef: ActorRef): Receive = {
-    case Pay                      => {
+  def inPayment(paymentActorRef: ActorRef, senderRef: ActorRef): Receive = LoggingReceive.withLabel("In payment"){
+    case Pay => {
       paymentActorRef ! DoPayment
       senderRef ! Done
       context.become(inPayment(paymentActorRef, sender))
