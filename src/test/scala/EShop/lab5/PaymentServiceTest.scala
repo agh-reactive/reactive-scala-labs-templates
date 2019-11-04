@@ -10,7 +10,8 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 import scala.concurrent.duration._
 
-class PaymentServiceTest extends TestKit(ActorSystem("PaymentServiceTest"))
+class PaymentServiceTest
+  extends TestKit(ActorSystem("PaymentServiceTest"))
   with FlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll
@@ -21,7 +22,7 @@ class PaymentServiceTest extends TestKit(ActorSystem("PaymentServiceTest"))
     TestKit.shutdownActorSystem(system)
 
   it should "response if external payment http server returned 200" in {
-    val probe = TestProbe()
+    val probe          = TestProbe()
     val paymentService = TestActorRef(PaymentService.props("payu", probe.ref))
 
     val msg = HttpResponse(StatusCodes.OK)
@@ -30,10 +31,10 @@ class PaymentServiceTest extends TestKit(ActorSystem("PaymentServiceTest"))
   }
 
   it should "fail if response from external payment http server returned 408" in {
-    val probe = TestProbe()
+    val probe   = TestProbe()
     val failure = TestProbe()
 
-    val watcher = system.actorOf(Props(new Actor{
+    val watcher = system.actorOf(Props(new Actor {
 
       val paymentService = context.actorOf(PaymentService.props("paypal", probe.ref))
       watch(paymentService)
@@ -42,34 +43,36 @@ class PaymentServiceTest extends TestKit(ActorSystem("PaymentServiceTest"))
         case _ => ()
       }
 
-      override def supervisorStrategy: SupervisorStrategy =  OneForOneStrategy(maxNrOfRetries = 1, withinTimeRange = 1.seconds) {
-        case _ : PaymentServerError =>
-          failure.ref ! "failed"
-          Stop
-      }
+      override def supervisorStrategy: SupervisorStrategy =
+        OneForOneStrategy(maxNrOfRetries = 1, withinTimeRange = 1.seconds) {
+          case _: PaymentServerError =>
+            failure.ref ! "failed"
+            Stop
+        }
     }))
 
     failure.expectMsg("failed")
   }
 
   it should "fail if response from external payment http server returned 404" in {
-    val probe = TestProbe()
+    val probe   = TestProbe()
     val failure = TestProbe()
 
-    val watcher = system.actorOf(Props(new Actor{
+    val watcher = system.actorOf(Props(new Actor {
 
-      val paymentService =context.actorOf(PaymentService.props("someUnknownMethod", probe.ref))
+      val paymentService = context.actorOf(PaymentService.props("someUnknownMethod", probe.ref))
       watch(paymentService)
 
       override def receive: Receive = {
         case _ => ()
       }
 
-      override def supervisorStrategy: SupervisorStrategy =  OneForOneStrategy(maxNrOfRetries = 1, withinTimeRange = 1.seconds) {
-        case _ : PaymentClientError =>
-          failure.ref ! "failed"
-          Stop
-      }
+      override def supervisorStrategy: SupervisorStrategy =
+        OneForOneStrategy(maxNrOfRetries = 1, withinTimeRange = 1.seconds) {
+          case _: PaymentClientError =>
+            failure.ref ! "failed"
+            Stop
+        }
     }))
 
     failure.expectMsg("failed")
