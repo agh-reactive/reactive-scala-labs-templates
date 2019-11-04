@@ -9,25 +9,25 @@ import scala.language.postfixOps
 
 object CheckoutFSM {
 
+  def props(cartActor: ActorRef) = Props(new CheckoutFSM)
+
   object Status extends Enumeration {
     type Status = Value
     val NotStarted, SelectingDelivery, SelectingPaymentMethod, Cancelled, ProcessingPayment, Closed = Value
   }
-
-  def props(cartActor: ActorRef) = Props(new CheckoutFSM)
 }
 
 class CheckoutFSM extends LoggingFSM[Status.Value, Data] {
   import EShop.lab2.CheckoutFSM.Status._
   import context.dispatcher
 
+  val checkoutTimerDuration: FiniteDuration = 1 seconds
+  val paymentTimerDuration: FiniteDuration  = 1 seconds
+  private val scheduler                  = context.system.scheduler
+
   // useful for debugging, see: https://doc.akka.io/docs/akka/current/fsm.html#rolling-event-log
   override def logDepth = 12
 
-  val checkoutTimerDuration: FiniteDuration = 1 seconds
-  val paymentTimerDuration: FiniteDuration  = 1 seconds
-
-  private val scheduler                  = context.system.scheduler
   private def checkoutTimer: Cancellable = scheduler.scheduleOnce(checkoutTimerDuration, self, ExpireCheckout)
   private def paymentTimer: Cancellable  = scheduler.scheduleOnce(paymentTimerDuration, self, ExpirePayment)
 
