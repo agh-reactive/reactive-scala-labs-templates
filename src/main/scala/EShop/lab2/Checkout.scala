@@ -64,7 +64,7 @@ class Checkout extends Actor {
 
   def processingPayment(timer: Cancellable): Receive = LoggingReceive.withLabel("[State: processingPayment]") {
     case CancelCheckout => timerCancellationAndAction(timer)(context become cancelled)
-    case ExpirePayment => context become cancelled
+    case ExpirePayment  => context become cancelled
     case ReceivePayment => timerCancellationAndAction(timer)(context become closed)
   }
 
