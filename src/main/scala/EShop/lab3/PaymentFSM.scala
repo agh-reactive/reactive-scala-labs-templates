@@ -1,5 +1,6 @@
 package EShop.lab3
 
+import EShop.lab2.Checkout.ReceivePayment
 import EShop.lab3.Payment._
 import akka.actor.{ActorRef, FSM, Props}
 
@@ -18,7 +19,12 @@ class PaymentFSM(
   startWith(WaitingForPayment, Empty)
 
   when(WaitingForPayment) {
-    ???
+    case Event(DoPayment, _) => {
+      checkout ! ReceivePayment
+      orderManager ! PaymentConfirmed
+      context.stop(self)
+      stay
+    }
   }
 
 }
