@@ -52,7 +52,6 @@ class CartActor extends Actor {
       timerCancellationAndAction(timer)(context become nonEmpty(cart.removeItem(item), scheduleTimer))
     case StartCheckout => timerCancellationAndAction(timer)(context become inCheckout(cart))
     case ExpireCart    => context become empty
-
   }
 
   def inCheckout(cart: Cart): Receive = LoggingReceive.withLabel("[State: inCheckout]") {

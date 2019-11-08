@@ -24,32 +24,32 @@ object Checkout {
 
   case class SelectDeliveryMethod(method: String) extends Command
 
-  case class SelectPayment(payment: String)       extends Command
+  case class SelectPayment(payment: String) extends Command
 
   case class PaymentStarted(payment: ActorRef) extends Event
 
-  case object Uninitialized                               extends Data
+  case object Uninitialized extends Data
 
-  case object StartCheckout                       extends Command
+  case object StartCheckout extends Command
 
-  case object CancelCheckout                      extends Command
+  case object CancelCheckout extends Command
 
-  case object ExpireCheckout                      extends Command
+  case object ExpireCheckout extends Command
 
-  case object ExpirePayment                       extends Command
+  case object ExpirePayment extends Command
 
-  case object ReceivePayment                      extends Command
+  case object ReceivePayment extends Command
 
-  case object CheckOutClosed                   extends Event
+  case object CheckOutClosed extends Event
 }
 
 class Checkout extends Actor {
   val checkoutTimerDuration = 1 seconds
   val paymentTimerDuration  = 1 seconds
-  private val scheduler = context.system.scheduler
-  private val log       = Logging(context.system, this)
+  private val scheduler     = context.system.scheduler
+  private val log           = Logging(context.system, this)
 
-  implicit val ec: ExecutionContextExecutor      = context.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
 
   def receive: Receive = LoggingReceive.withLabel("State: receive") {
     case StartCheckout => context become selectingDelivery(scheduleCheckoutTimer)
@@ -72,7 +72,7 @@ class Checkout extends Actor {
         timerCancellationAndAction(timer)(context become processingPayment(schedulePaymentTimer))
     }
 
-  private def schedulePaymentTimer: Cancellable  = scheduler.scheduleOnce(paymentTimerDuration, self, ExpirePayment)
+  private def schedulePaymentTimer: Cancellable = scheduler.scheduleOnce(paymentTimerDuration, self, ExpirePayment)
 
   def processingPayment(timer: Cancellable): Receive = LoggingReceive.withLabel("[State: processingPayment]") {
     case CancelCheckout => timerCancellationAndAction(timer)(context become cancelled)

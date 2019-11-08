@@ -23,7 +23,7 @@ class CheckoutFSM extends LoggingFSM[Status.Value, Data] {
 
   val checkoutTimerDuration: FiniteDuration = 1 seconds
   val paymentTimerDuration: FiniteDuration  = 1 seconds
-  private val scheduler                  = context.system.scheduler
+  private val scheduler                     = context.system.scheduler
 
   // useful for debugging, see: https://doc.akka.io/docs/akka/current/fsm.html#rolling-event-log
   override def logDepth = 12
