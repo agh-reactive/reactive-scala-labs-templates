@@ -1,12 +1,12 @@
 image: hseeberger/scala-sbt:8u222_1.3.2_2.13.1
+language: scala
 
-variables:
-  SBT_VERSION: "1.3.2"
+jdk: openjdk8
 
-stages:
-  - test
+scala:
+  - 2.13.1
 
-test:
-  stage: test
-  script:
-    - sbt clean test
+script:
+  - sbt compile
+  - sbt test:compile
+  - sbt test

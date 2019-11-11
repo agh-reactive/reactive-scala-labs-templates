@@ -1,10 +1,12 @@
 package EShop.lab2
 
+import EShop.lab2.CartActor.CloseCheckout
 import EShop.lab2.Checkout.{
   CancelCheckout,
   Data,
   ExpireCheckout,
   ExpirePayment,
+  PaymentStarted,
   ProcessingPaymentStarted,
   ReceivePayment,
   SelectDeliveryMethod,
@@ -14,6 +16,7 @@ import EShop.lab2.Checkout.{
   Uninitialized
 }
 import EShop.lab2.CheckoutFSM.Status
+import EShop.lab3.Payment
 import akka.actor.{ActorRef, LoggingFSM, Props}
 
 import scala.concurrent.duration._
@@ -57,18 +60,24 @@ class CheckoutFSM(cartActor: ActorRef) extends LoggingFSM[Status.Value, Data] {
   }
 
   when(SelectingPaymentMethod) {
-    case Event(SelectPayment(_), SelectingDeliveryStarted(timer)) =>
+    case Event(SelectPayment(action), SelectingDeliveryStarted(timer)) =>
       timer.cancel()
       val newTimer = scheduler.scheduleOnce(delay = checkoutTimerDuration, receiver = self, message = ExpireCheckout)(
         context.system.dispatcher
       )
+      val paymentActor = context.actorOf(Payment.props(action, sender, self), "PaymentActor")
+      sender ! PaymentStarted(paymentActor)
       goto(ProcessingPayment) using ProcessingPaymentStarted(newTimer)
     case Event(CancelCheckout, _) => goto(Cancelled)
     case Event(ExpireCheckout, _) => goto(Cancelled)
   }
 
   when(ProcessingPayment) {
-    case Event(ReceivePayment, _) => goto(Closed)
+    case Event(ReceivePayment, ProcessingPaymentStarted(timer)) => {
+      timer.cancel()
+      cartActor ! CloseCheckout
+      goto(Closed)
+    }
     case Event(CancelCheckout, _) => goto(Cancelled)
     case Event(ExpireCheckout, _) => goto(Cancelled)
     case Event(ExpirePayment, _)  => goto(Cancelled)
