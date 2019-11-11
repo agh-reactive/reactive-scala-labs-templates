@@ -1,7 +1,7 @@
 package EShop.lab3
 
 import EShop.lab2.CartActor._
-import EShop.lab2.{Cart, CartFSM}
+import EShop.lab2.{Cart, CartActor, CartFSM}
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import org.scalatest.concurrent.ScalaFutures
@@ -37,11 +37,12 @@ class CartTest
   }
 
   it should "start checkout" in {
-    val actorRef = TestActorRef(CartFSM.props())
-    actorRef ! AddItem(item)
-    actorRef ! StartCheckout
-    expectMsgPF() {
-      case _: CheckoutStarted => println("checkout received")
+    val cartActor: TestActorRef[CartActor] = TestActorRef(new CartActor)
+    cartActor ! AddItem(item)
+    cartActor ! StartCheckout
+    fishForMessage() {
+      case _: CheckoutStarted => true
+      case _                  => false
     }
   }
 }

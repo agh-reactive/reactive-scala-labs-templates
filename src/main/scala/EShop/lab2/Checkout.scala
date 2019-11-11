@@ -3,6 +3,7 @@ package EShop.lab2
 import EShop.lab2.CartActor.CloseCheckout
 import EShop.lab2.Checkout.{
   CancelCheckout,
+  Command,
   ExpireCheckout,
   ExpirePayment,
   PaymentStarted,
@@ -48,8 +49,8 @@ class Checkout(
   private val scheduler = context.system.scheduler
   private val log       = Logging(context.system, this)
 
-  val checkoutTimerDuration = 1 seconds
-  val paymentTimerDuration  = 1 seconds
+  val checkoutTimerDuration = 1.seconds
+  val paymentTimerDuration  = 1.seconds
 
   def receive: Receive = LoggingReceive.withLabel("In checkout proceeding to selecting delivery.") {
     case StartCheckout => {
@@ -68,11 +69,9 @@ class Checkout(
   def selectingPaymentMethod(timer: Cancellable): Receive = {
     case SelectPayment(action) =>
       timer.cancel()
-      val payTimer =
-        scheduler.scheduleOnce(checkoutTimerDuration, receiver = self, ExpireCheckout)(context.system.dispatcher)
       val paymentActor = context.actorOf(Payment.props(action, sender, self), "PaymentActor")
       sender ! PaymentStarted(paymentActor)
-      context become processingPayment(payTimer)
+      context become processingPayment(scheduleTimer(paymentTimerDuration, ExpirePayment))
     case CancelCheckout => context become cancelled
     case ExpirePayment  => context become cancelled
     case ExpireCheckout => context become cancelled
@@ -95,5 +94,8 @@ class Checkout(
   def closed: Receive = LoggingReceive.withLabel("Payment closed") {
     case msg => log.error("Payment closed", msg.toString)
   }
+
+  private def scheduleTimer(finiteDuration: FiniteDuration, command: Command): Cancellable =
+    scheduler.scheduleOnce(finiteDuration, self, command)(context.dispatcher, self)
 
 }

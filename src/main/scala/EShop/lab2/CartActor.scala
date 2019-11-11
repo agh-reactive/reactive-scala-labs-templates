@@ -46,10 +46,12 @@ class CartActor extends Actor {
 
   def empty: Receive = LoggingReceive.withLabel("==Empty==") {
     case AddItem(item) => {
-      //scheduleTimer.cancel()
+      scheduleTimer.cancel()
       context become nonEmpty(Cart.empty.addItem(item), scheduleTimer)
     }
-    case GetItems => sender ! Cart.empty
+    case GetItems =>
+      sender ! Cart.empty
+      context become empty
   }
 
   def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive.withLabel("==Non Empty==") {
@@ -72,7 +74,9 @@ class CartActor extends Actor {
       sender ! CheckoutStarted(checkoutActor)
       context become (inCheckout(cart))
     case ExpireCart => context become empty
-    case GetItems   => sender ! cart
+    case GetItems =>
+      sender ! cart
+      context become nonEmpty(cart, timer)
   }
 
   def inCheckout(cart: Cart): Receive = LoggingReceive.withLabel("==In Checkout==") {

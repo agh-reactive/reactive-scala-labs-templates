@@ -3,6 +3,7 @@ package EShop.lab2
 import EShop.lab2.CartActor.CloseCheckout
 import EShop.lab2.Checkout.{
   CancelCheckout,
+  Command,
   Data,
   ExpireCheckout,
   ExpirePayment,
@@ -17,7 +18,7 @@ import EShop.lab2.Checkout.{
 }
 import EShop.lab2.CheckoutFSM.Status
 import EShop.lab3.Payment
-import akka.actor.{ActorRef, LoggingFSM, Props}
+import akka.actor.{ActorRef, Cancellable, LoggingFSM, Props}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -62,12 +63,9 @@ class CheckoutFSM(cartActor: ActorRef) extends LoggingFSM[Status.Value, Data] {
   when(SelectingPaymentMethod) {
     case Event(SelectPayment(action), SelectingDeliveryStarted(timer)) =>
       timer.cancel()
-      val newTimer = scheduler.scheduleOnce(delay = checkoutTimerDuration, receiver = self, message = ExpireCheckout)(
-        context.system.dispatcher
-      )
       val paymentActor = context.actorOf(Payment.props(action, sender, self), "PaymentActor")
       sender ! PaymentStarted(paymentActor)
-      goto(ProcessingPayment) using ProcessingPaymentStarted(newTimer)
+      goto(ProcessingPayment) using ProcessingPaymentStarted(scheduleTimer(paymentTimerDuration, ExpirePayment))
     case Event(CancelCheckout, _) => goto(Cancelled)
     case Event(ExpireCheckout, _) => goto(Cancelled)
   }
@@ -90,5 +88,8 @@ class CheckoutFSM(cartActor: ActorRef) extends LoggingFSM[Status.Value, Data] {
   when(Closed) {
     case _ => stay
   }
+
+  private def scheduleTimer(finiteDuration: FiniteDuration, command: Command): Cancellable =
+    scheduler.scheduleOnce(finiteDuration, self, command)(context.dispatcher, self)
 
 }
