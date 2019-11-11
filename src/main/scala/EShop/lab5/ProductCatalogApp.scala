@@ -3,7 +3,9 @@ import java.net.URI
 import java.util.zip.GZIPInputStream
 
 import akka.actor.{Actor, ActorSystem, Props}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import com.typesafe.config.ConfigFactory
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -46,7 +48,7 @@ class SearchService() {
   }
 }
 
-object ProductCatalog {
+object ProductCatalog extends SprayJsonSupport with DefaultJsonProtocol {
   case class Item(id: URI, name: String, brand: String, price: BigDecimal, count: Int)
 
   sealed trait Query
@@ -54,6 +56,15 @@ object ProductCatalog {
 
   sealed trait Ack
   case class Items(items: List[Item]) extends Ack
+
+  implicit val uriFormat = new RootJsonFormat[java.net.URI] {
+    override def write(obj: URI): JsValue = JsString(obj.toString)
+    override def read(json: JsValue): URI = URI.create(json.toString())
+  }
+
+  implicit val itemFormat  = jsonFormat5(Item)
+  implicit val queryFormat = jsonFormat2(GetItems)
+  implicit val itemsFormat = jsonFormat1(Items)
 
   def props(searchService: SearchService): Props =
     Props(new ProductCatalog(searchService))
