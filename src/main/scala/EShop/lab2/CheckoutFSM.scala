@@ -1,14 +1,15 @@
 package EShop.lab2
 
-import EShop.lab2.Checkout.{Data, Uninitialized}
+import EShop.lab2.CartActor.CloseCheckout
+import EShop.lab2.Checkout.{CancelCheckout, Data, ExpireCheckout, PaymentStarted, ReceivePayment, SelectDeliveryMethod, SelectPayment, SelectingDeliveryStarted, StartCheckout, Uninitialized}
 import EShop.lab2.CheckoutFSM.Status
+import EShop.lab3.Payment
 import akka.actor.{ActorRef, LoggingFSM, Props}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object CheckoutFSM {
-
   object Status extends Enumeration {
     type Status = Value
     val NotStarted, SelectingDelivery, SelectingPaymentMethod, Cancelled, ProcessingPayment, Closed = Value
@@ -31,27 +32,36 @@ class CheckoutFSM(cartActor: ActorRef) extends LoggingFSM[Status.Value, Data] {
   startWith(NotStarted, Uninitialized)
 
   when(NotStarted) {
-    ???
+    case Event(StartCheckout, Uninitialized) => goto(SelectingDelivery)
   }
 
-  when(SelectingDelivery) {
-    ???
+  when(SelectingDelivery, stateTimeout = checkoutTimerDuration) {
+    case Event(SelectDeliveryMethod(_), _) => goto(SelectingPaymentMethod)
+    case Event(CancelCheckout | ExpireCheckout | StateTimeout, _) => goto(Cancelled)
   }
 
-  when(SelectingPaymentMethod) {
-    ???
+  when(SelectingPaymentMethod, stateTimeout = checkoutTimerDuration) {
+    case Event(SelectPayment(method), _) => {
+      val paymentActor: ActorRef = context.system.actorOf(Payment.props(method, sender, self))
+      sender ! PaymentStarted(paymentActor)
+      goto(ProcessingPayment)
+    }
+    case Event(CancelCheckout | ExpireCheckout | StateTimeout, _) => goto(Cancelled)
   }
 
-  when(ProcessingPayment) {
-    ???
+  when(ProcessingPayment, stateTimeout = paymentTimerDuration) {
+    case Event(ReceivePayment, _) => {
+      cartActor ! CloseCheckout
+      goto(Closed)
+    }
+    case Event(CancelCheckout | ExpireCheckout | StateTimeout, _) => goto(Cancelled)
   }
 
   when(Cancelled) {
-    ???
+    case _ => stay()
   }
 
   when(Closed) {
-    ???
+    case _ => stay()
   }
-
 }
