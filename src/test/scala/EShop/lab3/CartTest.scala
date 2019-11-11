@@ -38,7 +38,7 @@ class CartTest
     cartRef ! CartActor.AddItem(item)
     cartRef ! CartActor.StartCheckout
     expectMsgPF(){
-      case CartActor.CheckoutStarted(_) => ()
+      case CartActor.CheckoutStarted(_, _) => ()
       case _ => fail()
     }
   }

@@ -17,7 +17,7 @@ object CartActor {
   case object StartCheckout        extends Command
   case object CancelCheckout       extends Command
   case object CloseCheckout        extends Command
-  case object GetItems             extends Command // command made to make testing easier
+  case object GetCart             extends Command // command made to make testing easier
 
   sealed trait Event
   case class CheckoutStarted(checkoutRef: ActorRef, cart: Cart) extends Event
@@ -67,7 +67,7 @@ class CartActor extends Actor {
       timer.cancel()
       val checkoutRef = context.actorOf(Checkout.props(self))
       checkoutRef ! Checkout.StartCheckout
-      sender ! CheckoutStarted(checkoutRef)
+      sender ! CheckoutStarted(checkoutRef, cart)
       context.become(inCheckout(cart))
     }
     case ExpireCart => {
