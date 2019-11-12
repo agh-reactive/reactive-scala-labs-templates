@@ -18,7 +18,10 @@ class PaymentFSM(
   startWith(WaitingForPayment, Empty)
 
   when(WaitingForPayment) {
-    ???
+    case Event(Payment.DoPayment, _) => {
+      orderManager ! Payment.PaymentConfirmed
+      stop
+    }
   }
 
 }

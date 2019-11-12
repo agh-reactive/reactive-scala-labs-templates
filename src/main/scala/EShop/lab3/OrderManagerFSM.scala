@@ -65,7 +65,7 @@ class OrderManagerFSM extends FSM[State, Data] {
   when(Finished) {
     case _ =>
       sender ! "order manager finished job"
-      stay()
+      stay
   }
 
 }
