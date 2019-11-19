@@ -59,10 +59,9 @@ class OrderManager extends Actor {
       cartActor ! CartActor.StartCheckout
       context become inCheckout(cartActor, sender)
     }
-  }
 
   def inCheckout(cartActorRef: ActorRef, senderRef: ActorRef): Receive = LoggingReceive.withLabel("==OM InCheckout==") {
-    case CartActor.CheckoutStarted(checkoutRef) => {
+    case CartActor.CheckoutStarted(checkoutRef, cart) => {
       senderRef ! Done
       context become inCheckout(checkoutRef)
     }
