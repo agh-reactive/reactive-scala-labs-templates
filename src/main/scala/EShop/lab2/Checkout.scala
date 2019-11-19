@@ -1,14 +1,18 @@
 package EShop.lab2
 
+import EShop.lab2.CartActor.CloseCheckout
 import EShop.lab2.Checkout.{
   CancelCheckout,
+  Command,
   ExpireCheckout,
   ExpirePayment,
+  PaymentStarted,
   ReceivePayment,
   SelectDeliveryMethod,
   SelectPayment,
   StartCheckout
 }
+import EShop.lab3.Payment
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.event.{Logging, LoggingReceive}
 
@@ -45,8 +49,8 @@ class Checkout(
   private val scheduler = context.system.scheduler
   private val log       = Logging(context.system, this)
 
-  val checkoutTimerDuration = 1 seconds
-  val paymentTimerDuration  = 1 seconds
+  val checkoutTimerDuration = 1.seconds
+  val paymentTimerDuration  = 1.seconds
 
   def receive: Receive = LoggingReceive.withLabel("In checkout proceeding to selecting delivery.") {
     case StartCheckout => {
@@ -63,20 +67,23 @@ class Checkout(
   }
 
   def selectingPaymentMethod(timer: Cancellable): Receive = {
-    case SelectPayment(_) =>
+    case SelectPayment(action) =>
       timer.cancel()
-      val payTimer =
-        scheduler.scheduleOnce(checkoutTimerDuration, receiver = self, ExpireCheckout)(context.system.dispatcher)
-      context become processingPayment(payTimer)
+      val paymentActor = context.actorOf(Payment.props(action, sender, self), "PaymentActor")
+      sender ! PaymentStarted(paymentActor)
+      context become processingPayment(scheduleTimer(paymentTimerDuration, ExpirePayment))
     case CancelCheckout => context become cancelled
+    case ExpirePayment  => context become cancelled
     case ExpireCheckout => context become cancelled
   }
 
   def processingPayment(timer: Cancellable): Receive = LoggingReceive.withLabel("In payment processing.") {
     case ReceivePayment =>
       timer.cancel()
+      cartActor ! CloseCheckout
       context become closed
     case CancelCheckout => context become cancelled
+    case ExpirePayment  => context become cancelled
     case ExpireCheckout => context become cancelled
   }
 
@@ -87,5 +94,8 @@ class Checkout(
   def closed: Receive = LoggingReceive.withLabel("Payment closed") {
     case msg => log.error("Payment closed", msg.toString)
   }
+
+  private def scheduleTimer(finiteDuration: FiniteDuration, command: Command): Cancellable =
+    scheduler.scheduleOnce(finiteDuration, self, command)(context.dispatcher, self)
 
 }

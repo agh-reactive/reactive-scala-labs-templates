@@ -1,6 +1,6 @@
 package EShop.lab2
 
-import EShop.lab2.CartActor.{AddItem, CancelCheckout, CloseCheckout, ExpireCart, RemoveItem, StartCheckout}
+import EShop.lab2.CartActor.{AddItem, CancelCheckout, CloseCheckout, ExpireCart, GetItems, RemoveItem, StartCheckout}
 import EShop.lab2.CartFSM.Status
 import akka.actor.{LoggingFSM, Props}
 
@@ -31,6 +31,10 @@ class CartFSM extends LoggingFSM[Status.Value, Cart] {
     case Event(AddItem(item), _) => {
       goto(NonEmpty) using Cart(item :: Nil)
     }
+    case Event(GetItems, _) => {
+      sender ! Cart.empty
+      stay
+    }
   }
 
   when(NonEmpty, stateTimeout = cartTimerDuration) {
@@ -41,9 +45,16 @@ class CartFSM extends LoggingFSM[Status.Value, Cart] {
         stay using cart.removeItem(item)
       }
     case Event(AddItem(item), cart: Cart) => stay using cart.addItem(item)
-    case Event(StartCheckout, cart: Cart) => goto(InCheckout) using cart
-    case Event(ExpireCart, _)             => goto(Empty) using Cart.empty
-    case Event(StateTimeout, _)           => goto(Empty) using Cart.empty
+    case Event(StartCheckout, cart: Cart) =>
+      val checkoutRef = context.actorOf(Checkout.props(self), "checkoutActor")
+      checkoutRef ! Checkout.StartCheckout
+      goto(InCheckout) using cart
+    case Event(ExpireCart, _)   => goto(Empty) using Cart.empty
+    case Event(StateTimeout, _) => goto(Empty) using Cart.empty
+    case Event(GetItems, cart: Cart) => {
+      sender ! cart
+      stay
+    }
   }
 
   when(InCheckout) {
