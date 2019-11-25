@@ -31,11 +31,10 @@ class Payment(
 ) extends Actor {
 
   override def receive: Receive = LoggingReceive.withLabel("==Payment receive==") {
-    case DoPayment => {
+    case DoPayment =>
       checkout ! ReceivePayment
       orderManager ! PaymentConfirmed
       context stop (self)
-    }
   }
 
 }

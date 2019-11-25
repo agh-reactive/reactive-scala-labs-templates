@@ -56,6 +56,10 @@ class OrderManagerFSM extends FSM[State, Data] {
       paymentRef ! DoPayment
       stay using InPaymentDataWithSender(paymentRef, sender)
     }
+    case Event(Pay, InPaymentData(paymentRef)) => {
+      paymentRef ! DoPayment
+      stay using InPaymentDataWithSender(paymentRef, sender)
+    }
     case Event(Payment.PaymentConfirmed, InPaymentDataWithSender(_, senderRef)) => {
       senderRef ! Done
       goto(Finished)

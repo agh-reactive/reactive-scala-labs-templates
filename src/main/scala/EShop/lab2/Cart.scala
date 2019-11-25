@@ -17,6 +17,9 @@ case class Cart(items: Seq[Any]) {
   def isEmpty: Boolean =
     size == 0
 
+  def containsOnlyThisItem(item: Any): Boolean =
+    size == 1 && contains(item)
+
 }
 
 object Cart {

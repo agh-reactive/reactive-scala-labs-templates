@@ -16,9 +16,7 @@ class PaymentFSM(method: String, orderManager: ActorRef, checkout: ActorRef) ext
 
   when(WaitingForPayment) {
     case Event(Payment.DoPayment, Empty) => {
-      checkout ! ReceivePayment
-      orderManager ! PaymentConfirmed
-      stop
+      ???
     }
   }
 
