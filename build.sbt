@@ -18,3 +18,5 @@ libraryDependencies ++= Seq(
 
 // scalaFmt
 scalafmtOnCompile := true
+
+Test / parallelExecution := false
