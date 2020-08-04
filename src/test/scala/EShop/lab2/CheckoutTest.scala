@@ -1,15 +1,16 @@
 package EShop.lab2
 
-import EShop.lab2.Checkout.{CancelCheckout, ReceivePayment, SelectDeliveryMethod, SelectPayment, StartCheckout}
+import EShop.lab2.Checkout.{CancelCheckout, ConfirmPaymentReceived, SelectDeliveryMethod, SelectPayment, StartCheckout}
 import akka.actor.{ActorSystem, Cancellable, Props}
 import akka.testkit.{ImplicitSender, TestKit}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
 
 import scala.concurrent.duration.{FiniteDuration, _}
 
 class CheckoutTest
   extends TestKit(ActorSystem("CheckoutTest"))
-  with FlatSpecLike
+  with AnyFlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll {
 
@@ -124,7 +125,7 @@ class CheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     checkoutActor ! SelectPayment(paymentMethod)
     Thread.sleep(2000)
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     expectMsg(cancelledMsg)
   }
 
@@ -137,7 +138,7 @@ class CheckoutTest
     expectMsg(selectingPaymentMethodMsg)
     checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     expectMsg(closedMsg)
   }
 
@@ -150,7 +151,7 @@ class CheckoutTest
     expectMsg(selectingPaymentMethodMsg)
     checkoutActor ! SelectPayment(paymentMethod)
     expectMsg(processingPaymentMsg)
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     expectMsg(closedMsg)
     checkoutActor ! CancelCheckout
     expectNoMessage()
