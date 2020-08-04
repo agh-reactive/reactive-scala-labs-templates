@@ -3,13 +3,14 @@ package EShop.lab2
 import EShop.lab2.CartActor._
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.testkit.{ImplicitSender, TestKit}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
 
 import scala.concurrent.duration._
 
 class CartActorTest
   extends TestKit(ActorSystem("CheckoutTest"))
-  with FlatSpecLike
+  with AnyFlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll {
 
