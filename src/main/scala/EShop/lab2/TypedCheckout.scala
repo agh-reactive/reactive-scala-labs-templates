@@ -28,7 +28,9 @@ object TypedCheckout {
   case class PaymentStarted(payment: ActorRef[Any]) extends Event
 }
 
-class TypedCheckout {
+class TypedCheckout(
+  cartActor: ActorRef[TypedCartActor.Command]
+) {
   import TypedCheckout._
 
   val checkoutTimerDuration: FiniteDuration = 1 seconds
