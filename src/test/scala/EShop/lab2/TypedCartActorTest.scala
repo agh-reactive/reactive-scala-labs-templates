@@ -1,5 +1,6 @@
 package EShop.lab2
 
+import EShop.lab3.TypedOrderManager
 import akka.actor.Cancellable
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}
 import akka.actor.typed.{ActorRef, Behavior}
@@ -76,7 +77,7 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(nonEmptyMsg)
     probe.expectMessage(1)
 
-    cart ! StartCheckout
+    cart ! StartCheckout(testKit.createTestProbe[TypedOrderManager.Command]().ref)
 
     probe.expectMessage(inCheckoutMsg)
     probe.expectMessage(1)
@@ -94,12 +95,12 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(nonEmptyMsg)
     probe.expectMessage(1)
 
-    cart ! StartCheckout
+    cart ! StartCheckout(testKit.createTestProbe[TypedOrderManager.Command]().ref)
 
     probe.expectMessage(inCheckoutMsg)
     probe.expectMessage(1)
 
-    cart ! CancelCheckout
+    cart ! ConfirmCheckoutCancelled
 
     probe.expectMessage(nonEmptyMsg)
     probe.expectMessage(1)
@@ -117,12 +118,12 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(nonEmptyMsg)
     probe.expectMessage(1)
 
-    cart ! StartCheckout
+    cart ! StartCheckout(testKit.createTestProbe[TypedOrderManager.Command]().ref)
 
     probe.expectMessage(inCheckoutMsg)
     probe.expectMessage(1)
 
-    cart ! CloseCheckout
+    cart ! ConfirmCheckoutClosed
 
     probe.expectMessage(emptyMsg)
     probe.expectMessage(0)
@@ -140,7 +141,7 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(nonEmptyMsg)
     probe.expectMessage(1)
 
-    cart ! StartCheckout
+    cart ! StartCheckout(testKit.createTestProbe[TypedOrderManager.Command]().ref)
 
     probe.expectMessage(inCheckoutMsg)
     probe.expectMessage(1)
@@ -157,7 +158,7 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(emptyMsg)
     probe.expectMessage(0)
 
-    cart ! StartCheckout
+    cart ! StartCheckout(testKit.createTestProbe[TypedOrderManager.Command]().ref)
 
     probe.expectNoMessage()
   }
