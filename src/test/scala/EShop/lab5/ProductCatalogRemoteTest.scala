@@ -3,8 +3,9 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{AsyncFlatSpec, Matchers}
 import ProductCatalog.GetItems
+import org.scalatest.flatspec.AsyncFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
