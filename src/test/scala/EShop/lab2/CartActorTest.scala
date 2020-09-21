@@ -1,6 +1,13 @@
 package EShop.lab2
 
-import EShop.lab2.CartActor.{AddItem, CancelCheckout, CheckoutStarted, CloseCheckout, RemoveItem, StartCheckout}
+import EShop.lab2.CartActor.{
+  AddItem,
+  CheckoutStarted,
+  ConfirmCheckoutCancelled,
+  ConfirmCheckoutClosed,
+  RemoveItem,
+  StartCheckout
+}
 import EShop.lab3.OrderManager
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.testkit.{ImplicitSender, TestKit}
@@ -71,8 +78,8 @@ class CartActorTest
     expectMsg(1)
     cart ! StartCheckout
     fishForMessage() {
-      case m: String if m == inCheckoutMsg => true
-      case _: OrderManager.StartCheckout   => false
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
     }
     expectMsg(1)
   }
@@ -85,11 +92,11 @@ class CartActorTest
     expectMsg(1)
     cart ! StartCheckout
     fishForMessage() {
-      case m: String if m == inCheckoutMsg => true
-      case _: OrderManager.StartCheckout   => false
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
     }
     expectMsg(1)
-    cart ! CancelCheckout
+    cart ! ConfirmCheckoutCancelled
     expectMsg(nonEmptyMsg)
     expectMsg(1)
   }
@@ -102,11 +109,11 @@ class CartActorTest
     expectMsg(1)
     cart ! StartCheckout
     fishForMessage() {
-      case m: String if m == inCheckoutMsg => true
-      case _: OrderManager.StartCheckout   => false
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
     }
     expectMsg(1)
-    cart ! CloseCheckout
+    cart ! ConfirmCheckoutClosed
     expectMsg(emptyMsg)
     expectMsg(0)
   }
@@ -119,8 +126,8 @@ class CartActorTest
     expectMsg(1)
     cart ! StartCheckout
     fishForMessage() {
-      case m: String if m == inCheckoutMsg => true
-      case _: OrderManager.StartCheckout   => false
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
     }
     expectMsg(1)
     cart ! AddItem("Henryk V")

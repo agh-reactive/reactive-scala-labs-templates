@@ -100,7 +100,7 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(inCheckoutMsg)
     probe.expectMessage(1)
 
-    cart ! CancelCheckout
+    cart ! ConfirmCheckoutCancelled
 
     probe.expectMessage(nonEmptyMsg)
     probe.expectMessage(1)
@@ -123,7 +123,7 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(inCheckoutMsg)
     probe.expectMessage(1)
 
-    cart ! CloseCheckout
+    cart ! ConfirmCheckoutClosed
 
     probe.expectMessage(emptyMsg)
     probe.expectMessage(0)

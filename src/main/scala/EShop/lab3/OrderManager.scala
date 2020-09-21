@@ -13,9 +13,9 @@ object OrderManager {
   case class SelectDeliveryAndPaymentMethod(delivery: String, payment: String) extends Command
   case object Buy                                                              extends Command
   case object Pay                                                              extends Command
-  case class StartCheckout(checkoutRef: ActorRef)                              extends Command
-  case class StartPayment(paymentRef: ActorRef)                                extends Command
-  case object ConfirmPayment                                                   extends Command
+  case class ConfirmCheckoutStarted(checkoutRef: ActorRef)                     extends Command
+  case class ConfirmPaymentStarted(paymentRef: ActorRef)                       extends Command
+  case object ConfirmPaymentReceived                                           extends Command
 
   sealed trait Ack
   case object Done extends Ack //trivial ACK
@@ -29,23 +29,13 @@ class OrderManager extends Actor {
 
   def open(cartActor: ActorRef): Receive = ???
 
-  def inCheckout(cartActorRef: ActorRef, senderRef: ActorRef): Receive = {
-    case CartActor.CheckoutStarted(checkoutRef, cart) => ???
-  }
+  def inCheckout(cartActorRef: ActorRef, senderRef: ActorRef): Receive = ???
 
-  def inCheckout(checkoutActorRef: ActorRef): Receive = {
-    case SelectDeliveryAndPaymentMethod(delivery, payment) => ???
-  }
+  def inCheckout(checkoutActorRef: ActorRef): Receive = ???
 
-  def inPayment(senderRef: ActorRef): Receive = {
-    case Checkout.PaymentStarted(paymentRef) => ???
+  def inPayment(senderRef: ActorRef): Receive = ???
 
-  }
-
-  def inPayment(paymentActorRef: ActorRef, senderRef: ActorRef): Receive = {
-    case Pay                      => ???
-    case Payment.PaymentConfirmed => ???
-  }
+  def inPayment(paymentActorRef: ActorRef, senderRef: ActorRef): Receive = ???
 
   def finished: Receive = {
     case _ => sender ! "order manager finished job"

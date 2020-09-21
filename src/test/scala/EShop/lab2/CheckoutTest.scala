@@ -100,7 +100,7 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _: OrderManager.StartPayment           => false
+      case _: OrderManager.ConfirmPaymentStarted  => false
     }
   }
 
@@ -114,7 +114,7 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _: OrderManager.StartPayment           => false
+      case _: OrderManager.ConfirmPaymentStarted  => false
     }
     checkoutActor ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -133,10 +133,10 @@ class CheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     checkoutActor ! SelectPayment(paymentMethod)
     Thread.sleep(2000)
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     fishForMessage() {
-      case m: String if m == cancelledMsg => true
-      case _: OrderManager.StartPayment   => false
+      case m: String if m == cancelledMsg        => true
+      case _: OrderManager.ConfirmPaymentStarted => false
     }
   }
 
@@ -150,9 +150,9 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _: OrderManager.StartPayment           => false
+      case _: OrderManager.ConfirmPaymentStarted  => false
     }
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     expectMsg(closedMsg)
   }
 
@@ -166,9 +166,9 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _: OrderManager.StartPayment           => false
+      case _: OrderManager.ConfirmPaymentStarted  => false
     }
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     expectMsg(closedMsg)
     checkoutActor ! CancelCheckout
     expectNoMessage()

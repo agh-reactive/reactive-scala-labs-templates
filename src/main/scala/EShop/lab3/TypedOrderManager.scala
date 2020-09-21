@@ -12,9 +12,9 @@ object TypedOrderManager {
   case class SelectDeliveryAndPaymentMethod(delivery: String, payment: String, sender: ActorRef[Ack]) extends Command
   case class Buy(sender: ActorRef[Ack])                                                               extends Command
   case class Pay(sender: ActorRef[Ack])                                                               extends Command
-  case class StartCheckout(checkoutRef: ActorRef[TypedCheckout.Command])                              extends Command
-  case class StartPayment(paymentRef: ActorRef[TypedPayment.Command])                                 extends Command
-  case object ConfirmPayment                                                                          extends Command
+  case class ConfirmCheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command])                     extends Command
+  case class ConfirmPaymentStarted(paymentRef: ActorRef[TypedPayment.Command])                        extends Command
+  case object ConfirmPaymentReceived                                                                  extends Command
 
   sealed trait Ack
   case object Done extends Ack //trivial ACK
