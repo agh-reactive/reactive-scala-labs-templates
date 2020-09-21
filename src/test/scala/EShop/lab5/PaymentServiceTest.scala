@@ -6,13 +6,15 @@ import akka.actor.{Actor, ActorSystem, OneForOneStrategy, Props, SupervisorStrat
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
 class PaymentServiceTest
   extends TestKit(ActorSystem("PaymentServiceTest"))
-  with FlatSpecLike
+  with AnyFlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll
   with Matchers

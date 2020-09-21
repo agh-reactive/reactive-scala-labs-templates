@@ -1,15 +1,16 @@
 package EShop.lab2
 
-import EShop.lab2.Checkout._
+import EShop.lab3.OrderManager
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
 
 import scala.concurrent.duration.{FiniteDuration, _}
 
 class CheckoutTest
   extends TestKit(ActorSystem("CheckoutTest"))
-  with FlatSpecLike
+  with AnyFlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll {
 
@@ -17,9 +18,10 @@ class CheckoutTest
   val deliveryMethod = "post"
   val paymentMethod  = "paypal"
 
-  override def afterAll: Unit =
-    TestKit.shutdownActorSystem(system)
+  override def afterAll: Unit = TestKit.shutdownActorSystem(system)
+
   import CheckoutTest._
+  import Checkout._
 
   it should "be in selectingDelivery state after checkout start" in {
     val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor)
@@ -98,7 +100,7 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _: PaymentStarted                      => false
+      case _: OrderManager.ConfirmPaymentStarted  => false
     }
   }
 
@@ -112,7 +114,7 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _: PaymentStarted                      => false
+      case _: OrderManager.ConfirmPaymentStarted  => false
     }
     checkoutActor ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -131,10 +133,10 @@ class CheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     checkoutActor ! SelectPayment(paymentMethod)
     Thread.sleep(2000)
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     fishForMessage() {
-      case m: String if m == cancelledMsg => true
-      case _: PaymentStarted              => false
+      case m: String if m == cancelledMsg        => true
+      case _: OrderManager.ConfirmPaymentStarted => false
     }
   }
 
@@ -148,9 +150,9 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _: PaymentStarted                      => false
+      case _: OrderManager.ConfirmPaymentStarted  => false
     }
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     expectMsg(closedMsg)
   }
 
@@ -164,9 +166,9 @@ class CheckoutTest
     checkoutActor ! SelectPayment(paymentMethod)
     fishForMessage() {
       case m: String if m == processingPaymentMsg => true
-      case _: PaymentStarted                      => false
+      case _: OrderManager.ConfirmPaymentStarted  => false
     }
-    checkoutActor ! ReceivePayment
+    checkoutActor ! ConfirmPaymentReceived
     expectMsg(closedMsg)
     checkoutActor ! CancelCheckout
     expectNoMessage()

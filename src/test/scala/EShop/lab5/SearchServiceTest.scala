@@ -1,7 +1,9 @@
 package EShop.lab5
-import org.scalatest.{FlatSpec, Matchers}
 
-class SearchServiceTest extends FlatSpec with Matchers {
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+
+class SearchServiceTest extends AnyFlatSpec with Matchers {
 
   "A Search Service" should "load the file from resources" in {
     val searchService = new SearchService()
