@@ -23,11 +23,6 @@ object ClusterNodeApp extends App {
 }
 
 object WorkHttpClusterApp extends App {
-  println()
-  println()
-  println()
-  println()
-  println(args(0).toInt)
   new WorkHttpServerInCluster().startServer("localhost", args(0).toInt)
 }
 

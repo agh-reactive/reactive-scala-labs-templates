@@ -1,22 +1,25 @@
 package EShop.lab3
 
-import EShop.lab3.OrderManager._
 import akka.actor.ActorSystem
-import akka.pattern.ask
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 import scala.concurrent.duration._
+import akka.pattern.ask
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
 class OrderManagerIntegrationTest
   extends TestKit(ActorSystem("OrderManagerIntegrationTest"))
-  with FlatSpecLike
+  with AnyFlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll
   with Matchers
   with ScalaFutures {
+
+  import OrderManager._
 
   implicit val timeout: Timeout = 1.second
 

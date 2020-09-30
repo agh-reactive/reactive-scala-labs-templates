@@ -1,23 +1,19 @@
 package EShop.lab4
 
 import EShop.lab2.Cart
-import EShop.lab2.CartActor._
-import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import EShop.lab2.CartActor.{AddItem, ConfirmCheckoutCancelled, ConfirmCheckoutClosed, RemoveItem, StartCheckout}
+import EShop.lab3.OrderManager
+import akka.actor.{ActorRef, ActorSystem, Cancellable, PoisonPill, Props}
 import akka.testkit.{ImplicitSender, TestKit}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.duration._
 import scala.util.Random
 
-/*
-Please change tests below that persisting of state is tested. Remember that it is crucial to use the same persistenceId
-for the actor to bring back his state. Use 'generatePersistenceId' to get Id, assign it to some val to use it afterwards
-you terminate actor.
- */
-
 class PersistentCartActorTest
   extends TestKit(ActorSystem("PersistentCartActorTest"))
-  with FlatSpecLike
+  with AnyFlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll {
 
@@ -89,8 +85,8 @@ class PersistentCartActorTest
     val cartActorAfterRestart: ActorRef = ???
     cartActorAfterRestart ! StartCheckout
     fishForMessage() {
-      case m: String if m == inCheckoutMsg => true
-      case _: CheckoutStarted              => false
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
     }
     expectMsg(1)
   }
@@ -104,13 +100,13 @@ class PersistentCartActorTest
     expectMsg(1)
     cart ! StartCheckout
     fishForMessage() {
-      case m: String if m == inCheckoutMsg => true
-      case _: CheckoutStarted              => false
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
     }
     expectMsg(1)
     //restart actor
     val cartActorAfterRestart: ActorRef = ???
-    cartActorAfterRestart ! CancelCheckout
+    cartActorAfterRestart ! ConfirmCheckoutCancelled
     expectMsg(nonEmptyMsg)
     expectMsg(1)
   }
@@ -124,13 +120,13 @@ class PersistentCartActorTest
     expectMsg(1)
     cart ! StartCheckout
     fishForMessage() {
-      case m: String if m == inCheckoutMsg => true
-      case _: CheckoutStarted              => false
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
     }
     expectMsg(1)
     //restart actor
     val cartActorAfterRestart: ActorRef = ???
-    cartActorAfterRestart ! CloseCheckout
+    cartActorAfterRestart ! ConfirmCheckoutClosed
     expectMsg(emptyMsg)
     expectMsg(0)
   }
@@ -144,8 +140,8 @@ class PersistentCartActorTest
     expectMsg(1)
     cart ! StartCheckout
     fishForMessage() {
-      case m: String if m == inCheckoutMsg => true
-      case _: CheckoutStarted              => false
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
     }
     expectMsg(1)
     //restart actor

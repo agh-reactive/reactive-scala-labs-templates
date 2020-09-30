@@ -10,12 +10,6 @@ object Payment {
   sealed trait Event
   case object PaymentConfirmed extends Event
 
-  sealed trait Data
-  case object Empty extends Data
-
-  sealed trait State
-  case object WaitingForPayment extends State
-
   def props(method: String, orderManager: ActorRef, checkout: ActorRef) =
     Props(new Payment(method, orderManager, checkout))
 
