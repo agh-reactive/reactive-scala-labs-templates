@@ -1,15 +1,17 @@
 package EShop.lab2
 
-import EShop.lab2.CartActor._
+import EShop.lab2.CartActor.{AddItem, CancelCheckout, CheckoutStarted, CloseCheckout, RemoveItem, StartCheckout}
+import EShop.lab3.OrderManager
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.testkit.{ImplicitSender, TestKit}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
 
 import scala.concurrent.duration._
 
 class CartActorTest
   extends TestKit(ActorSystem("CheckoutTest"))
-  with FlatSpecLike
+  with AnyFlatSpecLike
   with ImplicitSender
   with BeforeAndAfterAll {
 
@@ -70,7 +72,7 @@ class CartActorTest
     cart ! StartCheckout
     fishForMessage() {
       case m: String if m == inCheckoutMsg => true
-      case _: CheckoutStarted              => false
+      case _: OrderManager.StartCheckout   => false
     }
     expectMsg(1)
   }
@@ -84,7 +86,7 @@ class CartActorTest
     cart ! StartCheckout
     fishForMessage() {
       case m: String if m == inCheckoutMsg => true
-      case _: CheckoutStarted              => false
+      case _: OrderManager.StartCheckout   => false
     }
     expectMsg(1)
     cart ! CancelCheckout
@@ -101,7 +103,7 @@ class CartActorTest
     cart ! StartCheckout
     fishForMessage() {
       case m: String if m == inCheckoutMsg => true
-      case _: CheckoutStarted              => false
+      case _: OrderManager.StartCheckout   => false
     }
     expectMsg(1)
     cart ! CloseCheckout
@@ -118,7 +120,7 @@ class CartActorTest
     cart ! StartCheckout
     fishForMessage() {
       case m: String if m == inCheckoutMsg => true
-      case _: CheckoutStarted              => false
+      case _: OrderManager.StartCheckout   => false
     }
     expectMsg(1)
     cart ! AddItem("Henryk V")

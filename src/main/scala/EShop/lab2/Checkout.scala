@@ -1,7 +1,8 @@
 package EShop.lab2
 
+import EShop.lab2.Checkout._
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
-import akka.event.Logging
+import akka.event.{Logging, LoggingReceive}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -21,7 +22,6 @@ object Checkout {
   case class SelectPayment(payment: String)       extends Command
   case object ExpirePayment                       extends Command
   case object ReceivePayment                      extends Command
-  case object Expire                              extends Command
 
   sealed trait Event
   case object CheckOutClosed                        extends Event

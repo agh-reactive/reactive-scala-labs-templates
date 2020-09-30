@@ -1,20 +1,23 @@
 package EShop.lab3
 
-import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestKit}
+import EShop.lab2.{Cart, TypedCartActor}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
-class CartFSMTest
-  extends TestKit(ActorSystem("CartTest"))
-  with FlatSpecLike
-  with ImplicitSender
+class TypedCartTest
+  extends ScalaTestWithActorTestKit
+  with AnyFlatSpecLike
   with BeforeAndAfterAll
   with Matchers
   with ScalaFutures {
 
   override def afterAll: Unit =
-    TestKit.shutdownActorSystem(system)
+    testKit.shutdownTestKit()
+
+  import TypedCartActor._
 
   //use GetItems command which was added to make test easier
   it should "add item properly" in {
