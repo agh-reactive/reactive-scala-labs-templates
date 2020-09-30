@@ -1,25 +1,23 @@
 package EShop.lab3
 
-import EShop.lab2.{CartActor, Checkout}
-import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import EShop.lab2.{TypedCartActor, TypedCheckout}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 
-class CheckoutTest
-  extends TestKit(ActorSystem("CheckoutTest"))
+class TypedCheckoutTest
+  extends ScalaTestWithActorTestKit
   with AnyFlatSpecLike
-  with ImplicitSender
   with BeforeAndAfterAll
   with Matchers
   with ScalaFutures {
 
-  import Checkout._
+  import TypedCheckout._
 
   override def afterAll: Unit =
-    TestKit.shutdownActorSystem(system)
+    testKit.shutdownTestKit()
 
   it should "Send close confirmation to cart" in {
     ???

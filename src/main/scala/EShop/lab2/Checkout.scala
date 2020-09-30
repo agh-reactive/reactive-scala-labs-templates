@@ -1,17 +1,13 @@
 package EShop.lab2
 
+import EShop.lab2.Checkout._
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
-import akka.event.Logging
+import akka.event.{Logging, LoggingReceive}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object Checkout {
-
-  sealed trait Data
-  case object Uninitialized                               extends Data
-  case class SelectingDeliveryStarted(timer: Cancellable) extends Data
-  case class ProcessingPaymentStarted(timer: Cancellable) extends Data
 
   sealed trait Command
   case object StartCheckout                       extends Command
@@ -20,8 +16,7 @@ object Checkout {
   case object ExpireCheckout                      extends Command
   case class SelectPayment(payment: String)       extends Command
   case object ExpirePayment                       extends Command
-  case object ReceivePayment                      extends Command
-  case object Expire                              extends Command
+  case object ConfirmPaymentReceived              extends Command
 
   sealed trait Event
   case object CheckOutClosed                        extends Event
