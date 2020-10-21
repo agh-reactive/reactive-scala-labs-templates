@@ -2,8 +2,8 @@ package EShop.lab2
 
 case class Cart(items: Seq[Any]) {
   def contains(item: Any): Boolean = items.contains(item)
-  def addItem(item: Any): Cart     = Cart(items + item)
-  def removeItem(item: Any): Cart  = Cart(items - item)
+  def addItem(item: Any): Cart     = Cart(items :+ item)
+  def removeItem(item: Any): Cart  = Cart(items.filterNot(i: i == item))
   def size: Int                    = items.size
 }
 

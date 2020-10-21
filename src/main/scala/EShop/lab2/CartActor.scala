@@ -29,13 +29,16 @@ class CartActor extends Actor {
   private val log       = Logging(context.system, this)
   val cartTimerDuration = 5 seconds
 
-  private def scheduleTimer: Cancellable = ???
+  private def scheduleTimer: Cancellable = system.scheduler.scheduleOnce(5 seconds) {
+  self ! ExpireCart
+}
 
   def receive: Receive = empty
 
   def empty: Receive = LoggingReceive {
     case AddItem(item) =>
       context become nonEmpty(Cart(Seq(item)))
+      scheduleTimer
   }
 
   def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive {
@@ -54,6 +57,8 @@ class CartActor extends Actor {
       val checkout = context.actorOf(Prps[Checkout], "checkout")
       checkout ! 
       context become inCheckout(cart)
+    case ExpireCart =>
+      conntext become empty
   }
 
   def inCheckout(cart: Cart): Receive = LoggingReceive {

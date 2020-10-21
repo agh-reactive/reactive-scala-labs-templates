@@ -40,6 +40,7 @@ class Checkout extends Actor {
 
   def receive: Receive = LoggingReceive {
     case StartCheckout => 
+    cobtext become selectingDelivery()
   }
 
   def selectingDelivery(timer: Cancellable): Receive = ???
