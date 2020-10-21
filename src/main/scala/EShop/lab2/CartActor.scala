@@ -31,11 +31,26 @@ class CartActor extends Actor {
 
   private def scheduleTimer: Cancellable = ???
 
-  def receive: Receive = ???
+  def receive: Receive = empty
 
-  def empty: Receive = ???
+  def empty: Receive = LoggingReceive {
+    case AddItem(item) =>
+      context become nonEmpty(Cart(Seq(item)))
+  }
 
-  def nonEmpty(cart: Cart, timer: Cancellable): Receive = ???
+  def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive {
+    case AddItem(item) =>
+      cart.addItem(item)
+      context become nonEmpty(cart)
+    case RemoveItem(item) =>
+      cart.removeItem(item)
+      if(cart.size == 0){
+        context become nonEmpty(cart)
+      }
+      else {
+        context become empty(cart)
+      }
+  }
 
   def inCheckout(cart: Cart): Receive = ???
 
