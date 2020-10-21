@@ -37,8 +37,9 @@ class CartActor extends Actor {
 
   def empty: Receive = LoggingReceive {
     case AddItem(item) =>
-      context become nonEmpty(Cart(Seq(item)))
+      context become nonEmpty(Cart(Seq(item, System.currentTimeMillis / 1000)))
       scheduleTimer
+    case ExpireCart => ()
   }
 
   def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive {
@@ -58,7 +59,10 @@ class CartActor extends Actor {
       checkout ! 
       context become inCheckout(cart)
     case ExpireCart =>
-      conntext become empty
+      if(timer + 5 < System.currentTimeMillis / 1000){
+        conntext become empty
+      }
+      
   }
 
   def inCheckout(cart: Cart): Receive = LoggingReceive {
