@@ -41,17 +41,19 @@ class CartActor extends Actor {
   def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive {
     case AddItem(item) =>
       cart.addItem(item)
-      context become nonEmpty(cart)
+      context become nonEmpty(cart, timer)
     case RemoveItem(item) =>
       cart.removeItem(item)
       if(cart.size == 0){
-        context become nonEmpty(cart)
+        context become nonEmpty(cart, timer)
       }
       else {
         context become empty(cart)
       }
     case StartCheckout =>
-      contexr become inCheckout(cart)
+      val checkout = context.actorOf(Prps[Checkout], "checkout")
+      checkout ! 
+      context become inCheckout(cart)
   }
 
   def inCheckout(cart: Cart): Receive = LoggingReceive {

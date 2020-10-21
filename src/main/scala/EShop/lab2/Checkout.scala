@@ -38,7 +38,9 @@ class Checkout extends Actor {
   val checkoutTimerDuration = 1 seconds
   val paymentTimerDuration  = 1 seconds
 
-  def receive: Receive = ???
+  def receive: Receive = LoggingReceive {
+    case StartCheckout => 
+  }
 
   def selectingDelivery(timer: Cancellable): Receive = ???
 
