@@ -5,6 +5,7 @@ import akka.event.{Logging, LoggingReceive}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import system.dispatcher
 
 object CartActor {
 
