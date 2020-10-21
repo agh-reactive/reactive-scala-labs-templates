@@ -50,8 +50,13 @@ class CartActor extends Actor {
       else {
         context become empty(cart)
       }
+    case StartCheckout =>
+      contexr become inCheckout(cart)
   }
 
-  def inCheckout(cart: Cart): Receive = ???
+  def inCheckout(cart: Cart): Receive = LoggingReceive {
+    case ConfirmCheckoutCancelled =>
+      context become nonEmpty(cart)
+  }
 
 }
