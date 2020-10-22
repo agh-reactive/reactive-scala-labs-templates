@@ -34,14 +34,14 @@ class CartActor extends Actor {
 
   def receive: Receive = empty
 
-  def empty: Receive = LoggingReceive {
+  def empty: Receive = {
     case AddItem(item) =>
       context become nonEmpty(Cart(Seq(item)), scheduleTimer)
       scheduleTimer
     case ExpireCart =>
   }
 
-  def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive {
+  def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
     case AddItem(item) =>
       cart.addItem(item)
       context become nonEmpty(cart, timer)
@@ -58,7 +58,7 @@ class CartActor extends Actor {
       context become empty
   }
 
-  def inCheckout(cart: Cart): Receive = LoggingReceive {
+  def inCheckout(cart: Cart): Receive = {
     case ConfirmCheckoutCancelled =>
       context become nonEmpty(cart, scheduleTimer)
     case ConfirmCheckoutClosed =>
