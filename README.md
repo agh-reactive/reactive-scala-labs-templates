@@ -1,1 +1,1 @@
-# reactive-lab
+# Mikołaj Tomalik - reactive-lab
