@@ -66,7 +66,7 @@ class Checkout extends Actor {
   }
 
   def processingPayment(timer: Cancellable): Receive = {
-    case ConfirmPaymentReceived(method) =>
+    case ConfirmPaymentReceived =>
       context become closed
     case CancelCheckout =>
       context become cancelled
