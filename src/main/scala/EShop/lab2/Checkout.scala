@@ -41,7 +41,7 @@ class Checkout extends Actor {
 
   def receive: Receive = {
     case StartCheckout =>
-      context become selectingDelivery(scheduler.scheduleOnce(checkoutTimerDuration, self, ExpireCheckout))
+      context become selectingDelivery(scheduler.scheduleOnce(checkoutTimerDuration, context.self, ExpireCheckout))
     case CancelCheckout =>
       context become cancelled
   }
@@ -63,6 +63,7 @@ class Checkout extends Actor {
     case ExpirePayment =>
       context become cancelled
     case ExpireCheckout =>
+      context become cancelled
   }
 
   def processingPayment(timer: Cancellable): Receive = {
@@ -73,6 +74,7 @@ class Checkout extends Actor {
     case ExpirePayment =>
       context become cancelled
     case ExpireCheckout =>
+      context become cancelled
   }
 
   def cancelled: Receive = {

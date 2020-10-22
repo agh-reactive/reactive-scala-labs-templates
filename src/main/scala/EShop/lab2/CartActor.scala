@@ -43,12 +43,10 @@ class CartActor extends Actor {
 
   def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
     case AddItem(item) =>
-      cart.addItem(item)
-      context become nonEmpty(cart, timer)
-    case RemoveItem(item) =>
-      cart.removeItem(item)
-      if (cart.size == 0) {
-        context become nonEmpty(cart, timer)
+      context become nonEmpty(cart.addItem(item), timer)
+    case RemoveItem(item) if cart.contains(item) =>
+      if (cart.size != 1) {
+        context become nonEmpty(cart.removeItem(item), timer)
       } else {
         context become empty
       }
