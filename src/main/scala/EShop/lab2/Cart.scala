@@ -5,9 +5,9 @@ case class Cart(items: Seq[Any]) {
 
   def addItem(item: Any): Cart = new Cart(items :+ item)
 
-  def removeItem(item: Any): Cart  = new Cart(items.filter(_ == item))
+  def removeItem(item: Any): Cart  = new Cart(items.filter(_ != item))
 
-  def size: Int = items.length
+  def size: Int = items.size
 }
 
 object Cart {
