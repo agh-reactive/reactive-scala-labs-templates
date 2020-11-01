@@ -1,6 +1,14 @@
 package EShop.lab2
 
-import EShop.lab2.CartActor.{AddItem, ConfirmCheckoutCancelled, ConfirmCheckoutClosed, RemoveItem, StartCheckout}
+import EShop.lab2.CartActor.{
+  AddItem,
+  CheckoutStarted,
+  ConfirmCheckoutCancelled,
+  ConfirmCheckoutClosed,
+  RemoveItem,
+  StartCheckout
+}
+import EShop.lab3.OrderManager
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.BeforeAndAfterAll
@@ -69,7 +77,10 @@ class CartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     cart ! StartCheckout
-    expectMsg(inCheckoutMsg)
+    fishForMessage() {
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
+    }
     expectMsg(1)
   }
 
@@ -80,7 +91,10 @@ class CartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     cart ! StartCheckout
-    expectMsg(inCheckoutMsg)
+    fishForMessage() {
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
+    }
     expectMsg(1)
     cart ! ConfirmCheckoutCancelled
     expectMsg(nonEmptyMsg)
@@ -94,7 +108,10 @@ class CartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     cart ! StartCheckout
-    expectMsg(inCheckoutMsg)
+    fishForMessage() {
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
+    }
     expectMsg(1)
     cart ! ConfirmCheckoutClosed
     expectMsg(emptyMsg)
@@ -108,7 +125,10 @@ class CartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     cart ! StartCheckout
-    expectMsg(inCheckoutMsg)
+    fishForMessage() {
+      case m: String if m == inCheckoutMsg        => true
+      case _: OrderManager.ConfirmCheckoutStarted => false
+    }
     expectMsg(1)
     cart ! AddItem("Henryk V")
     expectNoMessage

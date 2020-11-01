@@ -3,7 +3,6 @@ package EShop.lab2
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.event.{Logging, LoggingReceive}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -20,14 +19,13 @@ object CartActor {
   case object StartCheckout extends Command
 
   case object ConfirmCheckoutCancelled extends Command
-
-  case object ConfirmCheckoutClosed extends Command
+  case object ConfirmCheckoutClosed    extends Command
+  case object GetItems                 extends Command // command made to make testing easier
 
   sealed trait Event
-
   case class CheckoutStarted(checkoutRef: ActorRef) extends Event
 
-  def props = Props(new CartActor())
+  def props() = Props(new CartActor())
 }
 
 class CartActor extends Actor {

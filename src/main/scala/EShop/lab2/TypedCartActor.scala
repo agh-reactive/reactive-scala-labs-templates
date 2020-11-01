@@ -11,12 +11,13 @@ import scala.concurrent.duration._
 object TypedCartActor {
 
   sealed trait Command
-  case class AddItem(item: Any)        extends Command
-  case class RemoveItem(item: Any)     extends Command
-  case object ExpireCart               extends Command
-  case object StartCheckout            extends Command
-  case object ConfirmCheckoutCancelled extends Command
-  case object ConfirmCheckoutClosed    extends Command
+  case class AddItem(item: Any)                                                  extends Command
+  case class RemoveItem(item: Any)                                               extends Command
+  case object ExpireCart                                                         extends Command
+  case class StartCheckout(orderManagerRef: ActorRef[TypedOrderManager.Command]) extends Command
+  case object ConfirmCheckoutCancelled                                           extends Command
+  case object ConfirmCheckoutClosed                                              extends Command
+  case class GetItems(sender: ActorRef[Cart])                                    extends Command // command made to make testing easier
 
   sealed trait Event
   case class CheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command]) extends Event
@@ -68,4 +69,3 @@ class TypedCartActor {
     )
 
 }
-
