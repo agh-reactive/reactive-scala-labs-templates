@@ -6,7 +6,6 @@ import akka.actor.typed.{ActorRef, Behavior}
 import scala.language.postfixOps
 
 import scala.concurrent.duration._
-import EShop.lab3.TypedOrderManager
 
 object TypedCheckout {
 
@@ -20,7 +19,7 @@ object TypedCheckout {
   case class SelectDeliveryMethod(method: String)                                                 extends Command
   case object CancelCheckout                                                                      extends Command
   case object ExpireCheckout                                                                      extends Command
-  case class SelectPayment(payment: String, orderManagerRef: ActorRef[TypedOrderManager.Command]) extends Command
+  case class SelectPayment(payment: String)                                                       extends Command
   case object ExpirePayment                                                                       extends Command
   case object ConfirmPaymentReceived                                                              extends Command
 

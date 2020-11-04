@@ -2,7 +2,8 @@ package EShop.lab2
 
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.event.{Logging, LoggingReceive}
-
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -46,6 +47,8 @@ class CartActor extends Actor {
       log.info("Created empty cart")
       context become nonEmpty(Cart(Seq(item)), scheduleTimer)
     case ExpireCart =>
+
+    case GetItems => sender !  Seq.empty[String]
   }
 
   def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive {
@@ -56,27 +59,33 @@ class CartActor extends Actor {
       if (cart.size != 1) {
         context become nonEmpty(cart.removeItem(item), timer)
         log.info(s"Removed $item from cart")
-      } else if(cart.contains(item)){
+      } else if (cart.contains(item)) {
         context become empty
       }
 
     case StartCheckout =>
-      log.info(s"Checkout stated")
       context become inCheckout(cart)
-      self ! StartCheckout
+      val checkout = context.system.actorOf(Props(new Checkout(self)), "checkout")
+      checkout ! Checkout.StartCheckout
+      sender ! CheckoutStarted(checkout)
 
     case ExpireCart =>
       log.info("Cart has expired")
       context become empty
-
+    case GetItems =>
+      sender ! cart.items
   }
 
   def inCheckout(cart: Cart): Receive = LoggingReceive {
     case ConfirmCheckoutCancelled =>
       log.info("Checkout cancelled")
+      sender ! ConfirmCheckoutCancelled
       context become nonEmpty(cart, scheduleTimer)
     case ConfirmCheckoutClosed =>
       log.info("Checkout completed")
+      sender ! ConfirmCheckoutClosed
       context become empty
+    case GetItems =>
+      sender ! cart.items
   }
 }

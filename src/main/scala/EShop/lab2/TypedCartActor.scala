@@ -1,12 +1,12 @@
 package EShop.lab2
 
+import EShop.lab3.TypedOrderManager
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.event.Logging
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object TypedCartActor {
 
@@ -14,7 +14,7 @@ object TypedCartActor {
   case class AddItem(item: Any)                                                  extends Command
   case class RemoveItem(item: Any)                                               extends Command
   case object ExpireCart                                                         extends Command
-  case class StartCheckout(orderManagerRef: ActorRef[TypedOrderManager.Command]) extends Command
+  case object StartCheckout                                                      extends Command
   case object ConfirmCheckoutCancelled                                           extends Command
   case object ConfirmCheckoutClosed                                              extends Command
   case class GetItems(sender: ActorRef[Cart])                                    extends Command // command made to make testing easier
@@ -45,7 +45,7 @@ class TypedCartActor {
 
   def nonEmpty(cart: Cart, timer: Cancellable): Behavior[TypedCartActor.Command] =
     Behaviors.receive(
-      (_, msg) =>
+      (context, msg) =>
         msg match {
           case AddItem(item) => nonEmpty(cart.addItem(item), timer)
           case RemoveItem(item) if cart.contains(item) => {
@@ -54,7 +54,8 @@ class TypedCartActor {
             else
               empty
           }
-          case StartCheckout => inCheckout(cart)
+          case StartCheckout =>
+            inCheckout(cart)
           case ExpireCart    => empty
         }
     )
