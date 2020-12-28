@@ -16,7 +16,7 @@ class SearchService() {
     getClass.getResourceAsStream("/query_result.gz")
   )
   private[lab5] val brandItemsMap = Source
-    .fromInputStream(gz)
+    .fromInputStream(gz)("UTF-8")
     .getLines()
     .drop(1) //skip header
     .filter(_.split(",").length >= 3)
