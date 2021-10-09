@@ -11,8 +11,6 @@ import scala.concurrent.duration._
 
 class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike with BeforeAndAfterAll {
 
-  override def afterAll: Unit = testKit.shutdownTestKit()
-
   import TypedCartActorTest._
   import TypedCartActor._
 
