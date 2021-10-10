@@ -14,8 +14,6 @@ class TypedCheckoutTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike w
   val deliveryMethod = "post"
   val paymentMethod  = "paypal"
 
-  override def afterAll: Unit = testKit.shutdownTestKit()
-
   import TypedCheckoutTest._
   import TypedCheckout._
 
