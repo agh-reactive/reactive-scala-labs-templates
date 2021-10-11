@@ -1,18 +1,7 @@
 package EShop.lab3
 
-<<<<<<< HEAD
 import EShop.lab2.{Cart, TypedCartActor}
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-=======
-<<<<<<<< HEAD:src/test/scala/EShop/lab3/CartTest.scala
-import EShop.lab2.{Cart, CartActor}
-import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-========
-import EShop.lab2.{Cart, TypedCartActor}
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
->>>>>>>> lab-3:src/test/scala/EShop/lab3/TypedCartTest.scala
->>>>>>> lab-3
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
