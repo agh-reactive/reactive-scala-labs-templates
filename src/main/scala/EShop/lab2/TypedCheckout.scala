@@ -1,22 +1,20 @@
 package EShop.lab2
 
-import EShop.lab3.{TypedOrderManager, TypedPayment}
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import cats.implicits.catsSyntaxOptionId
-
 import scala.language.postfixOps
+
 import scala.concurrent.duration._
+import EShop.lab3.OrderManager
 
 object TypedCheckout {
-
   sealed trait Command
   case object StartCheckout                                                                       extends Command
   case class SelectDeliveryMethod(method: String)                                                 extends Command
   case object CancelCheckout                                                                      extends Command
   case object ExpireCheckout                                                                      extends Command
-  case class SelectPayment(payment: String, orderManagerRef: ActorRef[TypedOrderManager.Command]) extends Command
+  case class SelectPayment(payment: String, orderManagerRef: ActorRef[OrderManager.Command]) extends Command
   case object ExpirePayment                                                                       extends Command
   case object ConfirmPaymentReceived                                                              extends Command
 
