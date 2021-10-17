@@ -29,19 +29,18 @@ class TypedCartActor {
 
   private def scheduleTimer(context: ActorContext[TypedCartActor.Command]): Cancellable = context.scheduleOnce(cartTimerDuration, context.self, ExpireCart)
 
-  def start: Behavior[TypedCartActor.Command] = Behaviors.receive(
-    (context, msg) =>
-      empty
-  )
+  def start: Behavior[TypedCartActor.Command] = empty
 
   def empty: Behavior[TypedCartActor.Command] = Behaviors.receive(
     (context, msg) =>
       msg match {
-        case AddItem(item) => 
+        case AddItem(item) =>           
           val emptyCart = Cart.empty.addItem(item)
           nonEmpty(emptyCart, scheduleTimer(context))
         case _ =>
-          Behaviors.same 
+          // val emptyCart = Cart.empty
+          // nonEmpty(emptyCart, scheduleTimer(context))
+          Behaviors.same
       }
   )
 
@@ -49,6 +48,7 @@ class TypedCartActor {
     (context, msg) =>
       msg match {
         case AddItem(item) => 
+          printf("Im here")
           val newCart = cart.addItem(item)
           nonEmpty(newCart, scheduleTimer(context))
         case RemoveItem(item) if cart.contains(item) =>
@@ -70,10 +70,9 @@ class TypedCartActor {
     (context, msg) =>
       msg match {
         case ConfirmCheckoutCancelled =>
-          Behaviors.stopped
+          nonEmpty(cart, scheduleTimer(context))
         case ConfirmCheckoutClosed => 
-          context.system.terminate
-          Behaviors.stopped
+          empty
         case _ =>
           Behaviors.same 
       }
