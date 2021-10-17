@@ -1,13 +1,12 @@
 package EShop.lab2
 
-import EShop.lab3.TypedOrderManager
+import EShop.lab3.OrderManager
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 
 import scala.language.postfixOps
 import scala.concurrent.duration._
-import EShop.lab3.OrderManager
 
 object TypedCartActor {
 
