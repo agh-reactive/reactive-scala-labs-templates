@@ -1,10 +1,5 @@
 package EShop.lab4
 
-<<<<<<< HEAD
-import EShop.lab2.Cart
-import EShop.lab2.CartActor.{AddItem, ConfirmCheckoutCancelled, ConfirmCheckoutClosed, RemoveItem, StartCheckout}
-=======
->>>>>>> lab-5
 import EShop.lab3.OrderManager
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
