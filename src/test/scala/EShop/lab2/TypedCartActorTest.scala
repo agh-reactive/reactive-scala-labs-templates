@@ -103,85 +103,85 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(1)
   }
 
-  // it should "close checkout properly" in {
-  //   val probe = testKit.createTestProbe[Any]()
-  //   val cart  = cartActorWithCartSizeResponseOnStateChange(testKit, probe.ref)
+  it should "close checkout properly" in {
+    val probe = testKit.createTestProbe[Any]()
+    val cart  = cartActorWithCartSizeResponseOnStateChange(testKit, probe.ref)
 
-  //   probe.expectMessage(emptyMsg)
-  //   probe.expectMessage(0)
+    probe.expectMessage(emptyMsg)
+    probe.expectMessage(0)
 
-  //   cart ! AddItem("Cymbelin")
+    cart ! AddItem("Cymbelin")
 
-  //   probe.expectMessage(nonEmptyMsg)
-  //   probe.expectMessage(1)
+    probe.expectMessage(nonEmptyMsg)
+    probe.expectMessage(1)
 
-  //   cart ! StartCheckout
+    cart ! StartCheckout
 
-  //   probe.expectMessage(inCheckoutMsg)
-  //   probe.expectMessage(1)
+    probe.expectMessage(inCheckoutMsg)
+    probe.expectMessage(1)
 
-  //   cart ! ConfirmCheckoutClosed
+    cart ! ConfirmCheckoutClosed
 
-  //   probe.expectMessage(emptyMsg)
-  //   probe.expectMessage(0)
-  // }
+    probe.expectMessage(emptyMsg)
+    probe.expectMessage(0)
+  }
 
-  // it should "not add items when in checkout" in {
-  //   val probe = testKit.createTestProbe[Any]()
-  //   val cart  = cartActorWithCartSizeResponseOnStateChange(testKit, probe.ref)
+  it should "not add items when in checkout" in {
+    val probe = testKit.createTestProbe[Any]()
+    val cart  = cartActorWithCartSizeResponseOnStateChange(testKit, probe.ref)
 
-  //   probe.expectMessage(emptyMsg)
-  //   probe.expectMessage(0)
+    probe.expectMessage(emptyMsg)
+    probe.expectMessage(0)
 
-  //   cart ! AddItem("Cymbelin")
+    cart ! AddItem("Cymbelin")
 
-  //   probe.expectMessage(nonEmptyMsg)
-  //   probe.expectMessage(1)
+    probe.expectMessage(nonEmptyMsg)
+    probe.expectMessage(1)
 
-  //   cart ! StartCheckout
+    cart ! StartCheckout
 
-  //   probe.expectMessage(inCheckoutMsg)
-  //   probe.expectMessage(1)
+    probe.expectMessage(inCheckoutMsg)
+    probe.expectMessage(1)
 
-  //   cart ! AddItem("Henryk V")
+    cart ! AddItem("Henryk V")
 
-  //   probe.expectNoMessage()
-  // }
+    probe.expectNoMessage()
+  }
 
-  // it should "not change state to inCheckout from empty" in {
-  //   val probe = testKit.createTestProbe[Any]()
-  //   val cart  = cartActorWithCartSizeResponseOnStateChange(testKit, probe.ref)
+  it should "not change state to inCheckout from empty" in {
+    val probe = testKit.createTestProbe[Any]()
+    val cart  = cartActorWithCartSizeResponseOnStateChange(testKit, probe.ref)
 
-  //   probe.expectMessage(emptyMsg)
-  //   probe.expectMessage(0)
+    probe.expectMessage(emptyMsg)
+    probe.expectMessage(0)
 
-  //   cart ! StartCheckout
+    cart ! StartCheckout
 
-  //   probe.expectNoMessage()
-  // }
+    probe.expectNoMessage()
+  }
 
-  // it should "expire and back to empty state after given time" in {
-  //   val probe = testKit.createTestProbe[Any]()
-  //   val cart  = cartActorWithCartSizeResponseOnStateChange(testKit, probe.ref)
+  it should "expire and back to empty state after given time" in {
+    val probe = testKit.createTestProbe[Any]()
+    val cart  = cartActorWithCartSizeResponseOnStateChange(testKit, probe.ref)
 
-  //   probe.expectMessage(emptyMsg)
-  //   probe.expectMessage(0)
+    probe.expectMessage(emptyMsg)
+    probe.expectMessage(0)
 
-  //   cart ! AddItem("King Lear")
+    cart ! AddItem("King Lear")
 
-  //   probe.expectMessage(nonEmptyMsg)
-  //   probe.expectMessage(1)
+    probe.expectMessage(nonEmptyMsg)
+    probe.expectMessage(1)
 
-  //   Thread.sleep(1500)
+    Thread.sleep(1500)
 
-  //   probe.expectMessage(emptyMsg)
-  //   probe.expectMessage(0)
+    probe.expectMessage(emptyMsg)
+    probe.expectMessage(0)
 
-  //   cart ! AddItem("King Lear")
+    cart ! AddItem("King Lear")
 
-  //   probe.expectMessage(nonEmptyMsg)
-  //   probe.expectMessage(1)
-  // }
+    probe.expectMessage(nonEmptyMsg)
+    probe.expectMessage(1)
+  }
 }
 
 object TypedCartActorTest {

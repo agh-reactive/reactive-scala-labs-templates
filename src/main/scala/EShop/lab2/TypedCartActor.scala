@@ -48,21 +48,23 @@ class TypedCartActor {
     (context, msg) =>
       msg match {
         case AddItem(item) => 
-          printf("Im here")
           val newCart = cart.addItem(item)
           nonEmpty(newCart, scheduleTimer(context))
         case RemoveItem(item) if cart.contains(item) =>
           val newCart = cart.removeItem(item)
-          if(newCart.size == 0) empty
+          if(newCart.size == 0) {
+            timer.cancel()
+            empty
+          }
           else nonEmpty(newCart, scheduleTimer(context));
-        case StartCheckout =>           
+        case StartCheckout =>
+          timer.cancel()           
           inCheckout(cart)
         case ExpireCart => 
+          timer.cancel()
           empty
         case _ =>
           Behaviors.same 
-          
-
       }
   )
 
