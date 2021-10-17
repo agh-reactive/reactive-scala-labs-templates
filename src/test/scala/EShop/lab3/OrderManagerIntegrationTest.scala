@@ -1,9 +1,12 @@
 package EShop.lab3
 
-import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.{ActorRef, Scheduler}
 import akka.util.Timeout
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 import akka.pattern.ask
@@ -12,36 +15,36 @@ import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 
 class OrderManagerIntegrationTest
-  extends TestKit(ActorSystem("OrderManagerIntegrationTest"))
+  extends ScalaTestWithActorTestKit
   with AnyFlatSpecLike
-  with ImplicitSender
   with BeforeAndAfterAll
   with Matchers
   with ScalaFutures {
 
   import OrderManager._
 
-  implicit val timeout: Timeout = 1.second
+  override implicit val timeout: Timeout = 1.second
+
+  implicit val scheduler: Scheduler = testKit.scheduler
+
+  def sendMessage(
+    orderManager: ActorRef[OrderManager.Command],
+    message: ActorRef[Any] => OrderManager.Command
+  ): Unit = {
+    import akka.actor.typed.scaladsl.AskPattern.Askable
+    orderManager.ask[Any](message).mapTo[OrderManager.Ack].futureValue shouldBe Done
+  }
 
   it should "supervise whole order process" in {
+    val orderManager = testKit.spawn(new OrderManager().start).ref
 
-    def sendMessage(
-      orderManager: TestActorRef[OrderManager],
-      message: OrderManager.Command
-    ): Unit =
-      (orderManager ? message).mapTo[OrderManager.Ack].futureValue shouldBe Done
-
-    val orderManager = TestActorRef(new OrderManager())
-
-    sendMessage(orderManager, AddItem("rollerblades"))
+    sendMessage(orderManager, AddItem("rollerblades", _))
 
     sendMessage(orderManager, Buy)
 
-    sendMessage(orderManager, SelectDeliveryAndPaymentMethod("paypal", "inpost"))
+    sendMessage(orderManager, SelectDeliveryAndPaymentMethod("paypal", "inpost", _))
 
-    sendMessage(orderManager, Pay)
-
-    (orderManager ? Pay).mapTo[String].futureValue shouldBe "order manager finished job"
+    sendMessage(orderManager, ref => Pay(ref))
   }
 
 }

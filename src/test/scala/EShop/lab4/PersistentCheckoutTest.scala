@@ -1,264 +1,240 @@
 package EShop.lab4
 
-import EShop.lab2.Checkout._
+import EShop.lab2.TypedCartActor
 import EShop.lab3.OrderManager
-import akka.actor.{ActorRef, ActorSystem, Cancellable, PoisonPill, Props}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
+import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.SerializationSettings
+import akka.persistence.typed.PersistenceId
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.flatspec.AnyFlatSpecLike
-import org.scalatest.BeforeAndAfterAll
 
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration._
 import scala.util.Random
 
 class PersistentCheckoutTest
-  extends TestKit(ActorSystem("PersistentCheckoutTest"))
+  extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
   with AnyFlatSpecLike
-  with ImplicitSender
-  with BeforeAndAfterAll {
+  with BeforeAndAfterAll
+  with BeforeAndAfterEach {
+
+  override def afterAll: Unit = testKit.shutdownTestKit()
+
+  import EShop.lab2.TypedCheckout._
+
+  private val cartActorProbe = testKit.createTestProbe[TypedCartActor.Command]()
+
+  private val orderManagerProbe = testKit.createTestProbe[OrderManager.Command]
+
+  private val eventSourcedTestKit =
+    EventSourcedBehaviorTestKit[Command, Event, State](
+      system,
+      new PersistentCheckout {
+        override val timerDuration: FiniteDuration = 1.second
+      }.apply(cartActorProbe.ref, generatePersistenceId),
+      SerializationSettings.disabled
+    )
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    eventSourcedTestKit.clear()
+  }
 
   val deliveryMethod = "post"
   val paymentMethod  = "paypal"
 
-  override def afterAll: Unit =
-    TestKit.shutdownActorSystem(system)
-  import PersistentCheckoutTest._
+  def generatePersistenceId: PersistenceId = PersistenceId.ofUniqueId(Random.alphanumeric.take(256).mkString)
 
   it should "be in selectingDelivery state after checkout start" in {
-    val cartActor     = TestProbe().ref
-    val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor)
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-    checkoutActor ! StartCheckout
-    expectMsg(selectingDeliveryMsg)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
   }
 
   it should "be in cancelled state after cancel message received in selectingDelivery State" in {
-    val cartActor     = TestProbe().ref
-    val id            = ???
-    val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-    checkoutActor ! StartCheckout
-    expectMsg(selectingDeliveryMsg)
-    //restart actor
-    val checkoutActorAfterRestart: ActorRef = ???
-    checkoutActorAfterRestart ! CancelCheckout
-    expectMsg(cancelledMsg)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultCancelCheckout = eventSourcedTestKit.runCommand(CancelCheckout)
+
+    resultCancelCheckout.event shouldBe CheckoutCancelled
+    resultCancelCheckout.state shouldBe Cancelled
   }
 
   it should "be in cancelled state after expire checkout timeout in selectingDelivery state" in {
-    val cartActor = TestProbe().ref
-    val checkoutActor = system.actorOf(Props(new PersistentCheckout(cartActor, generatePersistenceId) {
-      override val timerDuration: FiniteDuration = 1.seconds
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-      override def cancelled: Receive = {
-        case any => sender ! cancelledMsg
-      }
-    }))
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
 
-    checkoutActor ! StartCheckout
     Thread.sleep(2000)
-    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
-    expectMsg(cancelledMsg)
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.hasNoEvents shouldBe true
+    resultSelectDelivery.state shouldBe Cancelled
   }
 
   it should "be in selectingPayment state after delivery method selected" in {
-    val cartActor     = TestProbe().ref
-    val id            = ???
-    val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-    checkoutActor ! StartCheckout
-    expectMsg(selectingDeliveryMsg)
-    //restart actor
-    val checkoutActorAfterRestart: ActorRef = ???
-    checkoutActorAfterRestart ! SelectDeliveryMethod(deliveryMethod)
-    expectMsg(selectingPaymentMethodMsg)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
   }
 
   it should "be in cancelled state after cancel message received in selectingPayment State" in {
-    val cartActor     = TestProbe().ref
-    val id            = ???
-    val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-    checkoutActor ! StartCheckout
-    expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
-    expectMsg(selectingPaymentMethodMsg)
-    //restart actor
-    val checkoutActorAfterRestart: ActorRef = ???
-    checkoutActorAfterRestart ! CancelCheckout
-    expectMsg(cancelledMsg)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
+    val resultCancelCheckout = eventSourcedTestKit.runCommand(CancelCheckout)
+
+    resultCancelCheckout.event shouldBe CheckoutCancelled
+    resultCancelCheckout.state shouldBe Cancelled
   }
 
   it should "be in cancelled state after expire checkout timeout in selectingPayment state" in {
-    val cartActor = TestProbe().ref
-    val checkoutActor = system.actorOf(Props(new PersistentCheckout(cartActor, generatePersistenceId) {
-      override val timerDuration: FiniteDuration = 1.seconds
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-      override def cancelled: Receive = {
-        case any => sender ! cancelledMsg
-      }
-    }))
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
 
-    checkoutActor ! StartCheckout
-    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
     Thread.sleep(2000)
-    checkoutActor ! SelectPayment(paymentMethod)
-    expectMsg(cancelledMsg)
+
+    val resultSelectPayment = eventSourcedTestKit.runCommand(SelectPayment(paymentMethod, orderManagerProbe.ref))
+
+    resultSelectPayment.hasNoEvents shouldBe true
+    resultSelectPayment.state shouldBe Cancelled
   }
 
   it should "be in processingPayment state after payment selected" in {
-    val cartActor     = TestProbe().ref
-    val id            = ???
-    val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-    checkoutActor ! StartCheckout
-    expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
-    expectMsg(selectingPaymentMethodMsg)
-    //restart actor
-    val checkoutActorAfterRestart: ActorRef = ???
-    checkoutActorAfterRestart ! SelectPayment(paymentMethod)
-    fishForMessage() {
-      case m: String if m == processingPaymentMsg => true
-      case _: OrderManager.StartPayment           => false
-    }
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
+    val resultSelectPayment = eventSourcedTestKit.runCommand(SelectPayment(paymentMethod, orderManagerProbe.ref))
+
+    resultSelectPayment.event.isInstanceOf[PaymentStarted] shouldBe true
+    resultSelectPayment.state.isInstanceOf[ProcessingPayment] shouldBe true
   }
 
   it should "be in cancelled state after cancel message received in processingPayment State" in {
-    val cartActor     = TestProbe().ref
-    val id            = ???
-    val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-    checkoutActor ! StartCheckout
-    expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
-    expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment(paymentMethod)
-    fishForMessage() {
-      case m: String if m == processingPaymentMsg => true
-      case _: OrderManager.StartPayment           => false
-    }
-    //restart actor
-    val checkoutActorAfterRestart: ActorRef = ???
-    checkoutActorAfterRestart ! CancelCheckout
-    expectMsg(cancelledMsg)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
+    val resultSelectPayment = eventSourcedTestKit.runCommand(SelectPayment(paymentMethod, orderManagerProbe.ref))
+
+    resultSelectPayment.event.isInstanceOf[PaymentStarted] shouldBe true
+    resultSelectPayment.state.isInstanceOf[ProcessingPayment] shouldBe true
+
+    val resultCancelCheckout = eventSourcedTestKit.runCommand(CancelCheckout)
+
+    resultCancelCheckout.event shouldBe CheckoutCancelled
+    resultCancelCheckout.state shouldBe Cancelled
   }
 
   it should "be in cancelled state after expire checkout timeout in processingPayment state" in {
-    val cartActor = TestProbe().ref
-    val checkoutActor = system.actorOf(Props(new PersistentCheckout(cartActor, generatePersistenceId) {
-      override val timerDuration: FiniteDuration = 1.seconds
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-      override def cancelled: Receive = {
-        case any => sender ! cancelledMsg
-      }
-    }))
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
 
-    checkoutActor ! StartCheckout
-    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
-    checkoutActor ! SelectPayment(paymentMethod)
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
+    val resultSelectPayment = eventSourcedTestKit.runCommand(SelectPayment(paymentMethod, orderManagerProbe.ref))
+
+    resultSelectPayment.event.isInstanceOf[PaymentStarted] shouldBe true
+    resultSelectPayment.state.isInstanceOf[ProcessingPayment] shouldBe true
+
     Thread.sleep(2000)
-    checkoutActor ! ReceivePayment
-    fishForMessage() {
-      case m: String if m == cancelledMsg => true
-      case _: OrderManager.StartPayment   => false
-    }
+
+    val resultReceivePayment = eventSourcedTestKit.runCommand(ConfirmPaymentReceived)
+
+    resultReceivePayment.hasNoEvents shouldBe true
+    resultReceivePayment.state shouldBe Cancelled
   }
 
   it should "be in closed state after payment completed" in {
-    val cartActor     = TestProbe().ref
-    val id            = ???
-    val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-    checkoutActor ! StartCheckout
-    expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
-    expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment(paymentMethod)
-    fishForMessage() {
-      case m: String if m == processingPaymentMsg => true
-      case _: OrderManager.StartPayment           => false
-    }
-    //restart actor
-    val checkoutActorAfterRestart: ActorRef = ???
-    checkoutActorAfterRestart ! ReceivePayment
-    expectMsg(closedMsg)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
+    val resultSelectPayment = eventSourcedTestKit.runCommand(SelectPayment(paymentMethod, orderManagerProbe.ref))
+
+    resultSelectPayment.event.isInstanceOf[PaymentStarted] shouldBe true
+    resultSelectPayment.state.isInstanceOf[ProcessingPayment] shouldBe true
+
+    val resultReceivePayment = eventSourcedTestKit.runCommand(ConfirmPaymentReceived)
+
+    resultReceivePayment.event shouldBe CheckOutClosed
+    resultReceivePayment.state shouldBe Closed
   }
 
   it should "not change state after cancel msg in completed state" in {
-    val cartActor     = TestProbe().ref
-    val id            = ???
-    val checkoutActor = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
 
-    checkoutActor ! StartCheckout
-    expectMsg(selectingDeliveryMsg)
-    checkoutActor ! SelectDeliveryMethod(deliveryMethod)
-    expectMsg(selectingPaymentMethodMsg)
-    checkoutActor ! SelectPayment(paymentMethod)
-    fishForMessage() {
-      case m: String if m == processingPaymentMsg => true
-      case _: OrderManager.StartPayment           => false
-    }
-    checkoutActor ! ReceivePayment
-    expectMsg(closedMsg)
-    //restart actor
-    val checkoutActorAfterRestart: ActorRef = ???
-    checkoutActorAfterRestart ! CancelCheckout
-    expectNoMessage()
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
+    val resultSelectPayment = eventSourcedTestKit.runCommand(SelectPayment(paymentMethod, orderManagerProbe.ref))
+
+    resultSelectPayment.event.isInstanceOf[PaymentStarted] shouldBe true
+    resultSelectPayment.state.isInstanceOf[ProcessingPayment] shouldBe true
+
+    val resultReceivePayment = eventSourcedTestKit.runCommand(ConfirmPaymentReceived)
+
+    resultReceivePayment.event shouldBe CheckOutClosed
+    resultReceivePayment.state shouldBe Closed
+
+    val resultCancelCheckout = eventSourcedTestKit.runCommand(CancelCheckout)
+
+    resultCancelCheckout.hasNoEvents shouldBe true
+    resultCancelCheckout.state shouldBe Closed
   }
-
-}
-
-object PersistentCheckoutTest {
-
-  val emptyMsg                  = "empty"
-  val selectingDeliveryMsg      = "selectingDelivery"
-  val selectingPaymentMethodMsg = "selectingPaymentMethod"
-  val processingPaymentMsg      = "processingPayment"
-  val cancelledMsg              = "cancelled"
-  val closedMsg                 = "closed"
-
-  def generatePersistenceId = Random.alphanumeric.take(256).mkString
-
-  def checkoutActorWithResponseOnStateChange(
-    system: ActorSystem
-  )(cartActor: ActorRef, persistenceId: String = generatePersistenceId) =
-    system.actorOf(Props(new PersistentCheckout(cartActor, persistenceId) {
-
-      override def receive() = {
-        val result = super.receive
-        sender ! emptyMsg
-        result
-      }
-
-      override def selectingDelivery(timer: Cancellable): Receive = {
-        val result = super.selectingDelivery(timer)
-        sender ! selectingDeliveryMsg
-        result
-      }
-
-      override def selectingPaymentMethod(timer: Cancellable): Receive = {
-        val result = super.selectingPaymentMethod(timer)
-        sender ! selectingPaymentMethodMsg
-        result
-      }
-
-      override def processingPayment(timer: Cancellable): Receive = {
-        val result = super.processingPayment(timer)
-        sender ! processingPaymentMsg
-        result
-      }
-
-      override def cancelled: Receive = {
-        val result = super.cancelled
-        sender ! cancelledMsg
-        result
-      }
-
-      override def closed: Receive = {
-        val result = super.closed
-        sender ! closedMsg
-        result
-      }
-
-    }))
 }
