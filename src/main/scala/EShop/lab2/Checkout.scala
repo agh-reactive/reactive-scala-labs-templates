@@ -5,6 +5,8 @@ import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.event.{Logging, LoggingReceive}
 
 import scala.concurrent.duration._
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 import scala.language.postfixOps
 
 object Checkout {
@@ -37,16 +39,47 @@ class Checkout extends Actor {
   val checkoutTimerDuration = 1 seconds
   val paymentTimerDuration  = 1 seconds
 
-  def receive: Receive = ???
+  def receive: Receive = {
+    case StartCheckout =>
+      context become selectingDelivery(scheduler.scheduleOnce(checkoutTimerDuration, self, ExpireCheckout))
+    }
 
-  def selectingDelivery(timer: Cancellable): Receive = ???
+  def selectingDelivery(timer: Cancellable): Receive = {
+    case SelectDeliveryMethod(method) => 
+        context become selectingPaymentMethod(timer)
+    case CancelCheckout =>
+      context become cancelled
+    case ExpireCheckout =>
+      context become cancelled
+  }
 
-  def selectingPaymentMethod(timer: Cancellable): Receive = ???
+  def selectingPaymentMethod(timer: Cancellable): Receive = {
+    case SelectPayment(payment) =>
+      context become processingPayment(scheduler.scheduleOnce(paymentTimerDuration, self, ExpirePayment))
+    case CancelCheckout =>
+      context become cancelled
+    case ExpireCheckout =>
+      context become cancelled
+  }
 
-  def processingPayment(timer: Cancellable): Receive = ???
+  def processingPayment(timer: Cancellable): Receive = {
+    case ExpirePayment =>
+      context become cancelled
+    case ExpireCheckout =>
+      context become cancelled
+    case ConfirmPaymentReceived =>
+      timer.cancel()
+      context become closed
+    case CancelCheckout =>
+      context become cancelled
+  }
 
-  def cancelled: Receive = ???
+  def cancelled: Receive = {
+    case _ =>
+  }
 
-  def closed: Receive = ???
+  def closed: Receive = {
+    case _ =>
+  }
 
 }
