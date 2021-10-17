@@ -1,42 +1,52 @@
 package EShop.lab5
 
-import EShop.lab3.Payment.{DoPayment, PaymentConfirmed}
-import EShop.lab5.Payment.{PaymentRejected, PaymentRestarted}
+import EShop.lab2.TypedCheckout
+import EShop.lab3.OrderManager
+import EShop.lab3.Payment.DoPayment
 import PaymentServiceServer.PaymentServiceServer
 import akka.actor.ActorSystem
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class PaymentTest
-  extends TestKit(ActorSystem("PaymentTest"))
-  with AnyFlatSpecLike
-  with ImplicitSender
-  with BeforeAndAfterAll
-  with Matchers
-  with ScalaFutures {
-
-  override def afterAll: Unit =
-    TestKit.shutdownActorSystem(system)
+class PaymentTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike {
 
   it should "properly confirm payment after 2 retries using payu payment method" in {
-    val manager  = TestProbe()
-    val checkout = TestProbe()
-    val payment  = TestActorRef(Payment.props("payu", manager.ref, checkout.ref))
+    val manager  = testKit.createTestProbe[OrderManager.Command]()
+    val checkout = testKit.createTestProbe[TypedCheckout.Command]()
+    val payment  = testKit.spawn(Payment("payu", manager.ref, checkout.ref))
 
     val server = new PaymentServiceServer()
-    Future { server.run() }
+    Future {
+      server.run()
+    }
 
-    payment ! DoPayment
+    payment ! Payment.DoPayment
 
-    manager.expectMsg(PaymentRestarted)
-    manager.expectMsg(PaymentRestarted)
-    manager.expectMsg(PaymentConfirmed)
+    manager.expectMessage(OrderManager.ConfirmPaymentReceived)
+
+    server.system.terminate()
+  }
+
+  it should "stop the payment process if the client request results in NotFound" in {
+    val manager  = testKit.createTestProbe[OrderManager.Command]()
+    val checkout = testKit.createTestProbe[TypedCheckout.Command]()
+    val payment  = testKit.spawn(Payment("notfound", manager.ref, checkout.ref))
+
+    val server = new PaymentServiceServer()
+    Future {
+      server.run()
+    }
+
+    payment ! Payment.DoPayment
+
+    manager.expectMessage(OrderManager.PaymentRejected)
+
     server.system.terminate()
   }
 

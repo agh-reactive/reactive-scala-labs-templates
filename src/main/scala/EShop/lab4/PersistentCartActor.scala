@@ -1,47 +1,55 @@
 package EShop.lab4
 
-import EShop.lab2.{Cart, Checkout}
-import akka.actor.{Cancellable, Props}
-import akka.event.{Logging, LoggingReceive}
-import akka.persistence.PersistentActor
+import EShop.lab2.{Cart, TypedCheckout}
+import EShop.lab3.OrderManager
+import akka.actor.Cancellable
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 
 import scala.concurrent.duration._
 
-object PersistentCartActor {
+class PersistentCartActor {
 
-  def props(persistenceId: String) = Props(new PersistentCartActor(persistenceId))
-}
+  import EShop.lab2.TypedCartActor._
 
-class PersistentCartActor(
-  val persistenceId: String
-) extends PersistentActor {
+  val cartTimerDuration: FiniteDuration = 5.seconds
 
-  import EShop.lab2.CartActor._
+  private def scheduleTimer(context: ActorContext[Command]): Cancellable = ???
 
-  private val log       = Logging(context.system, this)
-  val cartTimerDuration = 5.seconds
+  def apply(persistenceId: PersistenceId): Behavior[Command] = Behaviors.setup { context =>
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId,
+      Empty,
+      commandHandler(context),
+      eventHandler(context)
+    )
+  }
 
-  private def scheduleTimer: Cancellable = ???
+  def commandHandler(context: ActorContext[Command]): (State, Command) => Effect[Event, State] = (state, command) => {
+    state match {
+      case Empty =>
+        ???
 
-  override def receiveCommand: Receive = empty
+      case NonEmpty(cart, _) =>
+        ???
 
-  private def updateState(event: Event, timer: Option[Cancellable] = None): Unit = {
-    ???
-    event match {
-      case CartExpired | CheckoutClosed       => ???
-      case CheckoutCancelled(cart)            => ???
-      case ItemAdded(item, cart)              => ???
-      case CartEmptied                        => ???
-      case ItemRemoved(item, cart)            => ???
-      case CheckoutStarted(checkoutRef, cart) => ???
+      case InCheckout(_) =>
+        ???
     }
   }
 
-  def empty: Receive = ???
+  def eventHandler(context: ActorContext[Command]): (State, Event) => State = (state, event) => {
+    ???
+    event match {
+      case CheckoutStarted(_)        => ???
+      case ItemAdded(item)           => ???
+      case ItemRemoved(item)         => ???
+      case CartEmptied | CartExpired => ???
+      case CheckoutClosed            => ???
+      case CheckoutCancelled         => ???
+    }
+  }
 
-  def nonEmpty(cart: Cart, timer: Cancellable): Receive = ???
-
-  def inCheckout(cart: Cart): Receive = ???
-
-  override def receiveRecover: Receive = ???
 }

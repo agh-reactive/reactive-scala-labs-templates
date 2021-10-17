@@ -1,54 +1,65 @@
 package EShop.lab4
 
-import EShop.lab2.CartActor
-import EShop.lab3.Payment
-import akka.actor.{ActorRef, Cancellable, Props}
-import akka.event.{Logging, LoggingReceive}
-import akka.persistence.PersistentActor
+import EShop.lab2.TypedCartActor
+import EShop.lab3.{OrderManager, Payment}
+import akka.actor.Cancellable
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.{ActorRef, Behavior}
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 
-import scala.util.Random
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
-object PersistentCheckout {
+class PersistentCheckout {
 
-  def props(cartActor: ActorRef, persistenceId: String) =
-    Props(new PersistentCheckout(cartActor, persistenceId))
-}
+  import EShop.lab2.TypedCheckout._
 
-class PersistentCheckout(
-  cartActor: ActorRef,
-  val persistenceId: String
-) extends PersistentActor {
+  val timerDuration: FiniteDuration = 1.seconds
 
-  import EShop.lab2.Checkout._
-  private val scheduler = context.system.scheduler
-  private val log       = Logging(context.system, this)
-  val timerDuration     = 1.seconds
+  def schedule(context: ActorContext[Command]): Cancellable = ???
 
-  private def updateState(event: Event, maybeTimer: Option[Cancellable] = None): Unit = {
-    ???
-    event match {
-      case CheckoutStarted                => ???
-      case DeliveryMethodSelected(method) => ???
-      case CheckOutClosed                 => ???
-      case CheckoutCancelled              => ???
-      case PaymentStarted(payment)        => ???
+  def apply(cartActor: ActorRef[TypedCartActor.Command], persistenceId: PersistenceId): Behavior[Command] =
+    Behaviors.setup { context =>
+      EventSourcedBehavior(
+        persistenceId,
+        WaitingForStart,
+        commandHandler(context, cartActor),
+        eventHandler(context)
+      )
+    }
 
+  def commandHandler(
+    context: ActorContext[Command],
+    cartActor: ActorRef[TypedCartActor.Command]
+  ): (State, Command) => Effect[Event, State] = (state, command) => {
+    state match {
+      case WaitingForStart =>
+        ???
+
+      case SelectingDelivery(_) =>
+        ???
+
+      case SelectingPaymentMethod(_) =>
+        ???
+
+      case ProcessingPayment(_) =>
+        ???
+
+      case Cancelled =>
+        ???
+
+      case Closed =>
+        ???
     }
   }
 
-  def receiveCommand: Receive = ???
-
-  def selectingDelivery(timer: Cancellable): Receive = ???
-
-  def selectingPaymentMethod(timer: Cancellable): Receive = ???
-
-  def processingPayment(timer: Cancellable): Receive = ???
-
-  def cancelled: Receive = ???
-
-  def closed: Receive = ???
-
-  override def receiveRecover: Receive = ???
+  def eventHandler(context: ActorContext[Command]): (State, Event) => State = (state, event) => {
+    event match {
+      case CheckoutStarted           => ???
+      case DeliveryMethodSelected(_) => ???
+      case PaymentStarted(_)         => ???
+      case CheckOutClosed            => ???
+      case CheckoutCancelled         => ???
+    }
+  }
 }
