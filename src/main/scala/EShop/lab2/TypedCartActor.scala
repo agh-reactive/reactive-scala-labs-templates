@@ -27,14 +27,56 @@ class TypedCartActor {
 
   val cartTimerDuration: FiniteDuration = 5 seconds
 
-  private def scheduleTimer(context: ActorContext[TypedCartActor.Command]): Cancellable = ???
+  private def scheduleTimer(context: ActorContext[TypedCartActor.Command]): Cancellable = context.scheduleOnce(cartTimerDuration, context.self, ExpireCart)
 
-  def start: Behavior[TypedCartActor.Command] = ???
+  def start: Behavior[TypedCartActor.Command] = Behaviors.receive(
+    (context, msg) =>
+      empty
+  )
 
-  def empty: Behavior[TypedCartActor.Command] = ???
+  def empty: Behavior[TypedCartActor.Command] = Behaviors.receive(
+    (context, msg) =>
+      msg match {
+        case AddItem(item) => 
+          val emptyCart = Cart.empty.addItem(item)
+          nonEmpty(emptyCart, scheduleTimer(context))
+        case _ =>
+          Behaviors.same 
+      }
+  )
 
-  def nonEmpty(cart: Cart, timer: Cancellable): Behavior[TypedCartActor.Command] = ???
+  def nonEmpty(cart: Cart, timer: Cancellable): Behavior[TypedCartActor.Command] = Behaviors.receive(
+    (context, msg) =>
+      msg match {
+        case AddItem(item) => 
+          val newCart = cart.addItem(item)
+          nonEmpty(newCart, scheduleTimer(context))
+        case RemoveItem(item) if cart.contains(item) =>
+          val newCart = cart.removeItem(item)
+          if(newCart.size == 0) empty
+          else nonEmpty(newCart, scheduleTimer(context));
+        case StartCheckout =>           
+          inCheckout(cart)
+        case ExpireCart => 
+          empty
+        case _ =>
+          Behaviors.same 
+          
 
-  def inCheckout(cart: Cart): Behavior[TypedCartActor.Command] = ???
+      }
+  )
+
+  def inCheckout(cart: Cart): Behavior[TypedCartActor.Command] = Behaviors.receive(
+    (context, msg) =>
+      msg match {
+        case ConfirmCheckoutCancelled =>
+          Behaviors.stopped
+        case ConfirmCheckoutClosed => 
+          context.system.terminate
+          Behaviors.stopped
+        case _ =>
+          Behaviors.same 
+      }
+  )
 
 }
