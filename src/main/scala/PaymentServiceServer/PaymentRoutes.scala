@@ -1,6 +1,6 @@
 package PaymentServiceServer
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MethodDirectives.get
@@ -12,7 +12,7 @@ import scala.util.Random
 
 trait PaymentRoutes {
 
-  implicit def system: ActorSystem
+  implicit def system: ActorSystem[Nothing]
 
   implicit lazy val timeout = Timeout(5.seconds)
 
@@ -23,21 +23,18 @@ trait PaymentRoutes {
       complete(getResponse)
     }
 
-  private def getResponse = {
+  private def getResponse =
     if (counter < 2) {
       counter += 1
       ImATeapot
     } else if (counter == 2) {
       counter += 1
       OK
-    } else {
+    } else
       Random.nextInt(6) match {
         case 0 | 1 | 2 => OK
         case 3         => InternalServerError
         case 4         => RequestTimeout
         case _         => ImATeapot
       }
-    }
-
-  }
 }

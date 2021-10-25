@@ -1,53 +1,50 @@
 package EShop.lab3
 
-import EShop.lab2.{CartActor, Checkout}
-import EShop.lab3.OrderManager._
-import akka.actor.{Actor, ActorRef, Props}
-import akka.event.LoggingReceive
+import EShop.lab2.{TypedCartActor, TypedCheckout}
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 
 object OrderManager {
 
   sealed trait Command
-  case class AddItem(id: String)                                               extends Command
-  case class RemoveItem(id: String)                                            extends Command
-  case class SelectDeliveryAndPaymentMethod(delivery: String, payment: String) extends Command
-  case object Buy                                                              extends Command
-  case object Pay                                                              extends Command
-  case class StartCheckout(checkoutRef: ActorRef)                              extends Command
-  case class StartPayment(paymentRef: ActorRef)                                extends Command
-  case object ConfirmPayment                                                   extends Command
+  case class AddItem(id: String, sender: ActorRef[Ack])                                               extends Command
+  case class RemoveItem(id: String, sender: ActorRef[Ack])                                            extends Command
+  case class SelectDeliveryAndPaymentMethod(delivery: String, payment: String, sender: ActorRef[Ack]) extends Command
+  case class Buy(sender: ActorRef[Ack])                                                               extends Command
+  case class Pay(sender: ActorRef[Ack])                                                               extends Command
+  case class ConfirmCheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command])                     extends Command
+  case class ConfirmPaymentStarted(paymentRef: ActorRef[Payment.Command])                             extends Command
+  case object ConfirmPaymentReceived                                                                  extends Command
+  case object PaymentRejected                                                                         extends Command
+  case object PaymentRestarted                                                                        extends Command
 
   sealed trait Ack
   case object Done extends Ack //trivial ACK
 }
 
-class OrderManager extends Actor {
+class OrderManager {
 
-  override def receive = uninitialized
+  import OrderManager._
 
-  def uninitialized: Receive = ???
+  def start: Behavior[OrderManager.Command] = ???
 
-  def open(cartActor: ActorRef): Receive = ???
+  def uninitialized: Behavior[OrderManager.Command] = ???
 
-  def inCheckout(cartActorRef: ActorRef, senderRef: ActorRef): Receive = {
-    case CartActor.CheckoutStarted(checkoutRef, cart) => ???
-  }
+  def open(cartActor: ActorRef[TypedCartActor.Command]): Behavior[OrderManager.Command] = ???
 
-  def inCheckout(checkoutActorRef: ActorRef): Receive = {
-    case SelectDeliveryAndPaymentMethod(delivery, payment) => ???
-  }
+  def inCheckout(
+    cartActorRef: ActorRef[TypedCartActor.Command],
+    senderRef: ActorRef[Ack]
+  ): Behavior[OrderManager.Command] = ???
 
-  def inPayment(senderRef: ActorRef): Receive = {
-    case Checkout.PaymentStarted(paymentRef) => ???
+  def inCheckout(checkoutActorRef: ActorRef[TypedCheckout.Command]): Behavior[OrderManager.Command] = ???
 
-  }
+  def inPayment(senderRef: ActorRef[Ack]): Behavior[OrderManager.Command] = ???
 
-  def inPayment(paymentActorRef: ActorRef, senderRef: ActorRef): Receive = {
-    case Pay                      => ???
-    case Payment.PaymentConfirmed => ???
-  }
+  def inPayment(
+    paymentActorRef: ActorRef[Payment.Command],
+    senderRef: ActorRef[Ack]
+  ): Behavior[OrderManager.Command] = ???
 
-  def finished: Receive = {
-    case _ => sender ! "order manager finished job"
-  }
+  def finished: Behavior[OrderManager.Command] = ???
 }

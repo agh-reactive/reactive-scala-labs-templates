@@ -1,46 +1,50 @@
 package EShop.lab5
 
-import EShop.lab3.Payment.DoPayment
-import EShop.lab5.Payment.{PaymentRejected, PaymentRestarted}
-import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
+import EShop.lab2.TypedCheckout
+import EShop.lab3.OrderManager
+import EShop.lab5.Payment.{PaymentRejected, WrappedPaymentServiceResponse}
+import EShop.lab5.PaymentService.{PaymentClientError, PaymentServerError, PaymentSucceeded}
+import akka.actor.typed.{ActorRef, Behavior, ChildFailed, SupervisorStrategy}
+import akka.actor.typed.scaladsl.Behaviors
+import akka.stream.StreamTcpException
 
 import scala.concurrent.duration._
+import akka.actor.typed.Terminated
 
 object Payment {
+  sealed trait Message
+  case object DoPayment                                                       extends Message
+  case class WrappedPaymentServiceResponse(response: PaymentService.Response) extends Message
 
-  case object PaymentRejected
-  case object PaymentRestarted
+  sealed trait Response
+  case object PaymentRejected extends Response
 
-  def props(method: String, orderManager: ActorRef, checkout: ActorRef) =
-    Props(new Payment(method, orderManager, checkout))
+  val restartStrategy = SupervisorStrategy.restart.withLimit(maxNrOfRetries = 3, withinTimeRange = 1.second)
 
-}
+  def apply(
+    method: String,
+    orderManager: ActorRef[OrderManager.Command],
+    checkout: ActorRef[TypedCheckout.Command]
+  ): Behavior[Message] =
+    Behaviors
+      .receive[Message](
+        (context, msg) =>
+          msg match {
+            case DoPayment                                       => ???
+            case WrappedPaymentServiceResponse(PaymentSucceeded) => ???
+        }
+      )
+      .receiveSignal {
+        case (context, Terminated(t)) => ???
+      }
 
-class Payment(
-  method: String,
-  orderManager: ActorRef,
-  checkout: ActorRef
-) extends Actor
-  with ActorLogging {
-
-  override def receive: Receive = {
-    case DoPayment => // use payment service
+  // please use this one to notify when supervised actor was stoped
+  private def notifyAboutRejection(
+    orderManager: ActorRef[OrderManager.Command],
+    checkout: ActorRef[TypedCheckout.Command]
+  ): Unit = {
+    orderManager ! OrderManager.PaymentRejected
+    checkout ! TypedCheckout.PaymentRejected
   }
 
-  override val supervisorStrategy: OneForOneStrategy =
-    OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 1.seconds) {
-      ???
-    }
-
-  //please use this one to notify when supervised actor was stoped
-  private def notifyAboutRejection(): Unit = {
-    orderManager ! PaymentRejected
-    checkout ! PaymentRejected
-  }
-
-  //please use this one to notify when supervised actor was restarted
-  private def notifyAboutRestart(): Unit = {
-    orderManager ! PaymentRestarted
-    checkout ! PaymentRestarted
-  }
 }

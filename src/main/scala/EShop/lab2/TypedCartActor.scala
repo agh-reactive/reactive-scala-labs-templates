@@ -1,6 +1,6 @@
 package EShop.lab2
 
-import EShop.lab3.TypedOrderManager
+import EShop.lab3.OrderManager
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
@@ -11,13 +11,13 @@ import scala.concurrent.duration._
 object TypedCartActor {
 
   sealed trait Command
-  case class AddItem(item: Any)                                                  extends Command
-  case class RemoveItem(item: Any)                                               extends Command
-  case object ExpireCart                                                         extends Command
-  case class StartCheckout(orderManagerRef: ActorRef[TypedOrderManager.Command]) extends Command
-  case object CancelCheckout                                                     extends Command
-  case object CloseCheckout                                                      extends Command
-  case class GetItems(sender: ActorRef[Cart])                                    extends Command
+  case class AddItem(item: Any)                                             extends Command
+  case class RemoveItem(item: Any)                                          extends Command
+  case object ExpireCart                                                    extends Command
+  case class StartCheckout(orderManagerRef: ActorRef[OrderManager.Command]) extends Command
+  case object ConfirmCheckoutCancelled                                      extends Command
+  case object ConfirmCheckoutClosed                                         extends Command
+  case class GetItems(sender: ActorRef[Cart])                               extends Command
 
   sealed trait Event
   case class CheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command]) extends Event
