@@ -1,213 +1,161 @@
 package EShop.lab4
 
-import EShop.lab2.Cart
-import EShop.lab2.CartActor.{AddItem, ConfirmCheckoutCancelled, ConfirmCheckoutClosed, RemoveItem, StartCheckout}
 import EShop.lab3.OrderManager
-import akka.actor.{ActorRef, ActorSystem, Cancellable, PoisonPill, Props}
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
+import akka.persistence.typed.PersistenceId
 import org.scalatest.flatspec.AnyFlatSpecLike
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.SerializationSettings
 
 import scala.concurrent.duration._
 import scala.util.Random
 
 class PersistentCartActorTest
-  extends TestKit(ActorSystem("PersistentCartActorTest"))
+  extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
   with AnyFlatSpecLike
-  with ImplicitSender
-  with BeforeAndAfterAll {
+  with BeforeAndAfterAll
+  with BeforeAndAfterEach {
 
-  override def afterAll: Unit =
-    TestKit.shutdownActorSystem(system)
+  override def afterAll: Unit = testKit.shutdownTestKit()
 
-  import PersistentCartActorTest._
+  import EShop.lab2.TypedCartActor._
 
-  it should "change state after adding first item to the cart" in {
-    val nonEmptyTestMsg = "changedStateToNonEmpty"
-
-    val cart = system.actorOf(
-      Props(new PersistentCartActor(generatePersistenceId) {
-        override def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
-          sender ! nonEmptyTestMsg
-          super.nonEmpty(cart, timer)
-        }
-      }),
-      "persistenceActor"
+  private val eventSourcedTestKit =
+    EventSourcedBehaviorTestKit[Command, Event, State](
+      system,
+      new PersistentCartActor {
+        override val cartTimerDuration: FiniteDuration = 1.second
+      }.apply(generatePersistenceId),
+      SerializationSettings.disabled
     )
 
-    cart ! AddItem("Hamlet")
-    expectMsg(nonEmptyTestMsg)
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    eventSourcedTestKit.clear()
   }
 
-  it should "contain one item after adding new item" in {
-    val cart = cartActorWithCartSizeResponseOnStateChange(system)
+  def generatePersistenceId: PersistenceId = PersistenceId.ofUniqueId(Random.alphanumeric.take(256).mkString)
 
-    cart ! AddItem("Otello")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
+  it should "change state after adding first item to the cart" in {
+    val result = eventSourcedTestKit.runCommand(AddItem("Hamlet"))
+
+    result.event.isInstanceOf[ItemAdded] shouldBe true
+    result.state.isInstanceOf[NonEmpty] shouldBe true
   }
 
   it should "be empty after adding new item and removing it after that" in {
-    val id   = ???
-    val cart = cartActorWithCartSizeResponseOnStateChange(system, id)
+    val resultAdd = eventSourcedTestKit.runCommand(AddItem("Storm"))
 
-    cart ! AddItem("Storm")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
-    //restart actor
-    val cartActorAfterRestart: ActorRef = ???
-    cartActorAfterRestart ! RemoveItem("Storm")
-    expectMsg(emptyMsg)
-    expectMsg(0)
+    resultAdd.event.isInstanceOf[ItemAdded] shouldBe true
+    resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
+
+    val resultRemove = eventSourcedTestKit.runCommand(RemoveItem("Storm"))
+
+    resultRemove.event shouldBe CartEmptied
+    resultRemove.state shouldBe Empty
   }
 
   it should "contain one item after adding new item and removing not existing one" in {
-    val id: String = ???
-    val cart       = cartActorWithCartSizeResponseOnStateChange(system, id)
+    val resultAdd = eventSourcedTestKit.runCommand(AddItem("Romeo & Juliet"))
 
-    cart ! AddItem("Romeo & Juliet")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
-    //restart actor
-    val cartActorAfterRestart: ActorRef = ???
-    cartActorAfterRestart ! RemoveItem("Makbet")
-    expectNoMessage()
+    resultAdd.event.isInstanceOf[ItemAdded] shouldBe true
+    resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
+
+    val resultRemove = eventSourcedTestKit.runCommand(RemoveItem("Macbeth"))
+
+    resultRemove.hasNoEvents shouldBe true
+    resultRemove.state.isInstanceOf[NonEmpty] shouldBe true
   }
 
   it should "change state to inCheckout from nonEmpty" in {
-    val id: String = ???
-    val cart       = cartActorWithCartSizeResponseOnStateChange(system, id)
+    val resultAdd = eventSourcedTestKit.runCommand(AddItem("Romeo & Juliet"))
 
-    cart ! AddItem("Romeo & Juliet")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
-    //restart actor
-    val cartActorAfterRestart: ActorRef = ???
-    cartActorAfterRestart ! StartCheckout
-    fishForMessage() {
-      case m: String if m == inCheckoutMsg        => true
-      case _: OrderManager.ConfirmCheckoutStarted => false
-    }
-    expectMsg(1)
+    resultAdd.event.isInstanceOf[ItemAdded] shouldBe true
+    resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
+
+    val resultStartCheckout =
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+
+    resultStartCheckout.event.isInstanceOf[CheckoutStarted] shouldBe true
+    resultStartCheckout.state.isInstanceOf[InCheckout] shouldBe true
   }
 
   it should "cancel checkout properly" in {
-    val id: String = ???
-    val cart       = cartActorWithCartSizeResponseOnStateChange(system, id)
+    val resultAdd = eventSourcedTestKit.runCommand(AddItem("Cymbelin"))
 
-    cart ! AddItem("Cymbelin")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
-    cart ! StartCheckout
-    fishForMessage() {
-      case m: String if m == inCheckoutMsg        => true
-      case _: OrderManager.ConfirmCheckoutStarted => false
-    }
-    expectMsg(1)
-    //restart actor
-    val cartActorAfterRestart: ActorRef = ???
-    cartActorAfterRestart ! ConfirmCheckoutCancelled
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
+    resultAdd.event.isInstanceOf[ItemAdded] shouldBe true
+    resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
+
+    val resultStartCheckout =
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+
+    resultStartCheckout.event.isInstanceOf[CheckoutStarted] shouldBe true
+    resultStartCheckout.state.isInstanceOf[InCheckout] shouldBe true
+
+    val resultCancelCheckout =
+      eventSourcedTestKit.runCommand(ConfirmCheckoutCancelled)
+
+    resultCancelCheckout.event shouldBe CheckoutCancelled
+    resultCancelCheckout.state.isInstanceOf[NonEmpty] shouldBe true
   }
 
   it should "close checkout properly" in {
-    val id: String = ???
-    val cart       = cartActorWithCartSizeResponseOnStateChange(system, id)
+    val resultAdd = eventSourcedTestKit.runCommand(AddItem("Cymbelin"))
 
-    cart ! AddItem("Cymbelin")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
-    cart ! StartCheckout
-    fishForMessage() {
-      case m: String if m == inCheckoutMsg        => true
-      case _: OrderManager.ConfirmCheckoutStarted => false
-    }
-    expectMsg(1)
-    //restart actor
-    val cartActorAfterRestart: ActorRef = ???
-    cartActorAfterRestart ! ConfirmCheckoutClosed
-    expectMsg(emptyMsg)
-    expectMsg(0)
+    resultAdd.event.isInstanceOf[ItemAdded] shouldBe true
+    resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
+
+    val resultStartCheckout =
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+
+    resultStartCheckout.event.isInstanceOf[CheckoutStarted] shouldBe true
+    resultStartCheckout.state.isInstanceOf[InCheckout] shouldBe true
+
+    val resultCloseCheckout =
+      eventSourcedTestKit.runCommand(ConfirmCheckoutClosed)
+
+    resultCloseCheckout.event shouldBe CheckoutClosed
+    resultCloseCheckout.state shouldBe Empty
   }
 
   it should "not add items when in checkout" in {
-    val id: String = ???
-    val cart       = cartActorWithCartSizeResponseOnStateChange(system, id)
+    val resultAdd = eventSourcedTestKit.runCommand(AddItem("Cymbelin"))
 
-    cart ! AddItem("Cymbelin")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
-    cart ! StartCheckout
-    fishForMessage() {
-      case m: String if m == inCheckoutMsg        => true
-      case _: OrderManager.ConfirmCheckoutStarted => false
-    }
-    expectMsg(1)
-    //restart actor
-    val cartActorAfterRestart: ActorRef = ???
-    cartActorAfterRestart ! AddItem("Henryk V")
-    expectNoMessage
+    resultAdd.event.isInstanceOf[ItemAdded] shouldBe true
+    resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
+
+    val resultStartCheckout =
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+
+    resultStartCheckout.event.isInstanceOf[CheckoutStarted] shouldBe true
+    resultStartCheckout.state.isInstanceOf[InCheckout] shouldBe true
+
+    val resultAdd2 = eventSourcedTestKit.runCommand(AddItem("Henryk V"))
+
+    resultAdd2.hasNoEvents shouldBe true
+    resultAdd2.state.isInstanceOf[InCheckout] shouldBe true
   }
 
   it should "not change state to inCheckout from empty" in {
-    val cart = cartActorWithCartSizeResponseOnStateChange(system)
+    val resultStartCheckout =
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
 
-    cart ! StartCheckout
-    expectNoMessage()
+    resultStartCheckout.hasNoEvents shouldBe true
+    resultStartCheckout.state shouldBe Empty
   }
 
   it should "expire and back to empty state after given time" in {
-    val id: String = ???
-    val cart       = cartActorWithCartSizeResponseOnStateChange(system, id)
+    val resultAdd = eventSourcedTestKit.runCommand(AddItem("King Lear"))
 
-    cart ! AddItem("King Lear")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
-    //restart actor
-    val cartActorAfterRestart: ActorRef = ???
+    resultAdd.event.isInstanceOf[ItemAdded] shouldBe true
+    resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
+
     Thread.sleep(1500)
-    cartActorAfterRestart ! AddItem("King Lear")
-    expectMsg(nonEmptyMsg)
-    expectMsg(1)
+
+    val resultAdd2 = eventSourcedTestKit.runCommand(RemoveItem("King Lear"))
+
+    resultAdd2.hasNoEvents shouldBe true
+    resultAdd2.state shouldBe Empty
   }
-}
-
-object PersistentCartActorTest {
-  val emptyMsg      = "empty"
-  val nonEmptyMsg   = "nonEmpty"
-  val inCheckoutMsg = "inCheckout"
-
-  def generatePersistenceId = Random.alphanumeric.take(256).mkString
-
-  def cartActorWithCartSizeResponseOnStateChange(
-    system: ActorSystem,
-    persistenceId: String = generatePersistenceId
-  ): ActorRef =
-    system.actorOf(Props(new PersistentCartActor(persistenceId) {
-      override val cartTimerDuration: FiniteDuration = 1.seconds
-
-      override def empty() = {
-        val result = super.empty
-        sender ! emptyMsg
-        sender ! 0
-        result
-      }
-
-      override def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
-        val result = super.nonEmpty(cart, timer)
-        sender ! nonEmptyMsg
-        sender ! cart.size
-        result
-      }
-
-      override def inCheckout(cart: Cart): Receive = {
-        val result = super.inCheckout(cart)
-        sender ! inCheckoutMsg
-        sender ! cart.size
-        result
-      }
-
-    }))
-
 }

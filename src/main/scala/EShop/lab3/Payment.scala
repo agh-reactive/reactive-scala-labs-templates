@@ -1,26 +1,23 @@
 package EShop.lab3
 
-import akka.actor.{Actor, ActorRef, Props}
+import EShop.lab2.TypedCheckout
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 
 object Payment {
 
   sealed trait Command
   case object DoPayment extends Command
-
-  sealed trait Event
-  case object PaymentConfirmed extends Event
-
-  def props(method: String, orderManager: ActorRef, checkout: ActorRef) =
-    Props(new Payment(method, orderManager, checkout))
-
 }
 
 class Payment(
   method: String,
-  orderManager: ActorRef,
-  checkout: ActorRef
-) extends Actor {
+  orderManager: ActorRef[OrderManager.Command],
+  checkout: ActorRef[TypedCheckout.Command]
+) {
 
-  override def receive: Receive = ???
+  import Payment._
+
+  def start: Behavior[Payment.Command] = ???
 
 }

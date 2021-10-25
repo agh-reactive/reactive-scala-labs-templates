@@ -1,13 +1,17 @@
 package EShop.lab5
 
-import java.net.URI
-
 import EShop.lab5.HelloWorldAkkaHttpServer.Greetings
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.server.{HttpApp, Route}
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat}
 
-import scala.concurrent.Future
+import java.net.URI
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 object HelloWorldAkkaHttpServer {
   case class Name(name: String)
@@ -21,22 +25,24 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   //custom formatter just for example
   implicit val uriFormat = new JsonFormat[java.net.URI] {
     override def write(obj: java.net.URI): spray.json.JsValue = JsString(obj.toString)
-    override def read(json: JsValue): URI = json match {
-      case JsString(url) => new URI(url)
-      case _             => throw new RuntimeException("Parsing exception")
-    }
+    override def read(json: JsValue): URI =
+      json match {
+        case JsString(url) => new URI(url)
+        case _             => throw new RuntimeException("Parsing exception")
+      }
   }
 
 }
 
 object HelloWorldAkkaHttpServerApp extends App {
-  new HelloWorldAkkaHttpServer().startServer("localhost", 9000)
+  new HelloWorldAkkaHttpServer().start(9000)
 }
 
 /** Just to demonstrate how one can build akka-http based server with JsonSupport */
-class HelloWorldAkkaHttpServer extends HttpApp with JsonSupport {
+class HelloWorldAkkaHttpServer extends JsonSupport {
+  implicit val system = ActorSystem[Nothing](Behaviors.empty, "HelloWorldAkkaHttp")
 
-  override protected def routes: Route = {
+  def routes: Route = {
     path("greetings") {
       post {
         entity(as[HelloWorldAkkaHttpServer.Name]) { name =>
@@ -46,6 +52,11 @@ class HelloWorldAkkaHttpServer extends HttpApp with JsonSupport {
         }
       }
     }
+  }
+
+  def start(port: Int) = {
+    val bindingFuture = Http().newServerAt("localhost", port).bind(routes)
+    Await.ready(system.whenTerminated, Duration.Inf)
   }
 
 }

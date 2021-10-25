@@ -1,83 +1,61 @@
 package EShop.lab5
 
 import EShop.lab5.PaymentService.{PaymentClientError, PaymentServerError, PaymentSucceeded}
-import akka.actor.SupervisorStrategy.Stop
-import akka.actor.{Actor, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ChildFailed
+import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
+import scala.concurrent.Future
 
-class PaymentServiceTest
-  extends TestKit(ActorSystem("PaymentServiceTest"))
-  with AnyFlatSpecLike
-  with ImplicitSender
-  with BeforeAndAfterAll
-  with Matchers
-  with ScalaFutures {
-
-  override def afterAll: Unit =
-    TestKit.shutdownActorSystem(system)
+class PaymentServiceTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike {
 
   it should "response if external payment http server returned 200" in {
-    val probe          = TestProbe()
-    val paymentService = TestActorRef(PaymentService.props("payu", probe.ref))
+    val probe = testKit.createTestProbe[PaymentService.Response]()
+    val paymentService =
+      testKit.spawn(PaymentService("visa", probe.ref))
 
-    val msg = HttpResponse(StatusCodes.OK)
-    paymentService.receive(msg, probe.ref)
-    probe.expectMsg(PaymentSucceeded)
+    probe.expectMessage(PaymentSucceeded)
   }
 
-  it should "fail if response from external payment http server returned 408" in {
-    val probe   = TestProbe()
-    val failure = TestProbe()
+  it should "fail if response from external payment http server returned 408 (Request Timeout)" in {
+    val probe   = testKit.createTestProbe[PaymentService.Response]()
+    val failure = testKit.createTestProbe[String]()
 
-    val watcher = system.actorOf(Props(new Actor {
+    testKit.spawn(Behaviors.setup[Any] { context =>
+      val paymentService = context.spawn(PaymentService("paypal", probe.ref), "PaymentService")
+      context.watch(paymentService)
 
-      val paymentService = context.actorOf(PaymentService.props("paypal", probe.ref))
-      watch(paymentService)
-
-      override def receive: Receive = {
-        case _ => ()
+      Behaviors.receiveSignal[Any] {
+        case (context, cf: ChildFailed) if cf.cause == PaymentServerError() =>
+          failure.ref ! "failed"
+          Behaviors.same
       }
+    })
 
-      override def supervisorStrategy: SupervisorStrategy =
-        OneForOneStrategy(maxNrOfRetries = 1, withinTimeRange = 1.seconds) {
-          case _: PaymentServerError =>
-            failure.ref ! "failed"
-            Stop
-        }
-    }))
-
-    failure.expectMsg("failed")
+    failure.expectMessage("failed")
   }
 
   it should "fail if response from external payment http server returned 404" in {
-    val probe   = TestProbe()
-    val failure = TestProbe()
+    val probe   = testKit.createTestProbe[PaymentService.Response]()
+    val failure = testKit.createTestProbe[String]()
 
-    val watcher = system.actorOf(Props(new Actor {
+    testKit.spawn(Behaviors.setup[Any] { context =>
+      val paymentService = context.spawn(PaymentService("someUnknownMethod", probe.ref), "PaymentService")
+      context.watch(paymentService)
 
-      val paymentService = context.actorOf(PaymentService.props("someUnknownMethod", probe.ref))
-      watch(paymentService)
-
-      override def receive: Receive = {
-        case _ => ()
+      Behaviors.receiveSignal[Any] {
+        case (context, cf: ChildFailed) if cf.cause == PaymentClientError() =>
+          failure.ref ! "failed"
+          Behaviors.same
       }
+    })
 
-      override def supervisorStrategy: SupervisorStrategy =
-        OneForOneStrategy(maxNrOfRetries = 1, withinTimeRange = 1.seconds) {
-          case _: PaymentClientError =>
-            failure.ref ! "failed"
-            Stop
-        }
-    }))
-
-    failure.expectMsg("failed")
+    failure.expectMessage("failed")
   }
-
 }
