@@ -19,11 +19,11 @@ object HelloWorldAkkaHttpServer {
 }
 
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val nameFormat      = jsonFormat1(HelloWorldAkkaHttpServer.Name)
-  implicit val greetingsFormat = jsonFormat1(HelloWorldAkkaHttpServer.Greetings)
+  implicit lazy val nameFormat      = jsonFormat1(HelloWorldAkkaHttpServer.Name)
+  implicit lazy val greetingsFormat = jsonFormat1(HelloWorldAkkaHttpServer.Greetings)
 
   //custom formatter just for example
-  implicit val uriFormat = new JsonFormat[java.net.URI] {
+  implicit lazy val uriFormat = new JsonFormat[java.net.URI] {
     override def write(obj: java.net.URI): spray.json.JsValue = JsString(obj.toString)
     override def read(json: JsValue): URI =
       json match {
