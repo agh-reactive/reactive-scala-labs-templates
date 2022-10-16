@@ -1,1 +1,1 @@
-# reactive-lab
+# Michał Faciszewski
