@@ -59,7 +59,9 @@ class CartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     cart ! RemoveItem("Makbet")
-    expectNoMessage()
+//    expectNoMessage()
+    expectMsg(nonEmptyMsg)
+    expectMsg(1)
   }
 
   it should "change state to inCheckout from nonEmpty" in {

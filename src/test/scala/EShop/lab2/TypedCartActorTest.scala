@@ -59,7 +59,9 @@ class TypedCartActorTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
 
     cart ! RemoveItem("Makbet")
 
-    probe.expectNoMessage()
+    probe.expectMessage(nonEmptyMsg)
+    probe.expectMessage(1)
+//    probe.expectNoMessage()
   }
 
   it should "change state to inCheckout from nonEmpty" in {
