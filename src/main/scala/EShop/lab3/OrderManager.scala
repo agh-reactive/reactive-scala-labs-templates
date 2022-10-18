@@ -6,15 +6,20 @@ import akka.actor.typed.{ActorRef, Behavior}
 
 object OrderManager {
 
+  case class ItemId(value: String)         extends AnyVal
+  case class DeliveryMethod(value: String) extends AnyVal
+  case class PaymentMethod(value: String)  extends AnyVal
+
   sealed trait Command
-  case class AddItem(id: String, sender: ActorRef[Ack])                                               extends Command
-  case class RemoveItem(id: String, sender: ActorRef[Ack])                                            extends Command
-  case class SelectDeliveryAndPaymentMethod(delivery: String, payment: String, sender: ActorRef[Ack]) extends Command
-  case class Buy(sender: ActorRef[Ack])                                                               extends Command
-  case class Pay(sender: ActorRef[Ack])                                                               extends Command
-  case class ConfirmCheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command])                     extends Command
-  case class ConfirmPaymentStarted(paymentRef: ActorRef[Payment.Command])                             extends Command
-  case object ConfirmPaymentReceived                                                                  extends Command
+  case class AddItem(id: ItemId, sender: ActorRef[Ack])    extends Command
+  case class RemoveItem(id: String, sender: ActorRef[Ack]) extends Command
+  case class SelectDeliveryAndPaymentMethod(delivery: DeliveryMethod, payment: PaymentMethod, sender: ActorRef[Ack])
+    extends Command
+  case class Buy(sender: ActorRef[Ack])                                           extends Command
+  case class Pay(sender: ActorRef[Ack])                                           extends Command
+  case class ConfirmCheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command]) extends Command
+  case class ConfirmPaymentStarted(paymentRef: ActorRef[Payment.Command])         extends Command
+  case object ConfirmPaymentReceived                                              extends Command
 
   sealed trait Ack
   case object Done extends Ack //trivial ACK

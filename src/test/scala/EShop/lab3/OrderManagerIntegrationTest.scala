@@ -34,11 +34,11 @@ class OrderManagerIntegrationTest
   it should "supervise whole order process" in {
     val orderManager = testKit.spawn(new OrderManager().start).ref
 
-    sendMessage(orderManager, AddItem("rollerblades", _))
+    sendMessage(orderManager, AddItem(ItemId("rollerblades"), _))
 
     sendMessage(orderManager, Buy)
 
-    sendMessage(orderManager, SelectDeliveryAndPaymentMethod("paypal", "inpost", _))
+    sendMessage(orderManager, SelectDeliveryAndPaymentMethod(DeliveryMethod("inpost"), PaymentMethod("paypal"), _))
 
     sendMessage(orderManager, ref => Pay(ref))
   }
