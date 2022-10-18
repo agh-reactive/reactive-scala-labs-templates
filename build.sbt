@@ -35,4 +35,4 @@ libraryDependencies += "io.gatling"            % "gatling-test-framework"    % "
 // scalaFmt
 scalafmtOnCompile := true
 
-fork := true
+Test / fork := true
