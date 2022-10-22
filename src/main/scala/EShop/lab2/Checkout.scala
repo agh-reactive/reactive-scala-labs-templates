@@ -37,16 +37,54 @@ class Checkout extends Actor {
   val checkoutTimerDuration = 1 seconds
   val paymentTimerDuration  = 1 seconds
 
-  def receive: Receive = ???
+  def receive: Receive = LoggingReceive {
+    case StartCheckout =>
+      context become selectingDelivery(
+        scheduler.scheduleOnce(checkoutTimerDuration, self, ExpireCheckout)(context.system.dispatcher)
+      )
+  }
 
-  def selectingDelivery(timer: Cancellable): Receive = ???
+  def selectingDelivery(timer: Cancellable): Receive = LoggingReceive {
+    case SelectDeliveryMethod(method) =>
+      log.log(Logging.InfoLevel, s"Selected delivery method: {}", method)
+      context become selectingPaymentMethod(timer)
+    case CancelCheckout =>
+      timer.cancel()
+      context become cancelled
+    case ExpireCheckout =>
+      context become cancelled
+  }
 
-  def selectingPaymentMethod(timer: Cancellable): Receive = ???
+  def selectingPaymentMethod(timer: Cancellable): Receive = LoggingReceive {
+    case SelectPayment(method) =>
+      timer.cancel()
+      log.log(Logging.InfoLevel, s"Selected payment method: {}", method)
+      context become processingPayment(
+          scheduler.scheduleOnce(paymentTimerDuration, self, ExpirePayment)(context.system.dispatcher)
+      )
+    case CancelCheckout =>
+      timer.cancel()
+      context become cancelled
+    case ExpireCheckout =>
+      context become cancelled
+  }
 
-  def processingPayment(timer: Cancellable): Receive = ???
+  def processingPayment(timer: Cancellable): Receive = LoggingReceive {
+    case ConfirmPaymentReceived =>
+      timer.cancel()
+      context become closed
+    case CancelCheckout =>
+      context become cancelled
+    case ExpirePayment =>
+      context become cancelled
+  }
 
-  def cancelled: Receive = ???
+  def cancelled: Receive = LoggingReceive {
+    case _ => log.log(Logging.InfoLevel, "Checkout has been cancelled")
+  }
 
-  def closed: Receive = ???
+  def closed: Receive = LoggingReceive {
+    case _ => log.log(Logging.InfoLevel, "Checkout was completed successfully")
+  }
 
 }
