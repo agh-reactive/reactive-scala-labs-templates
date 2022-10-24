@@ -1,10 +1,10 @@
 name := "EShop"
 
-version := "0.3"
+version := "0.4"
 
 scalaVersion := "2.13.6"
 
-val akkaVersion = "2.6.16"
+val akkaVersion = "2.6.20"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka"        %% "akka-actor"                % akkaVersion,
@@ -18,8 +18,8 @@ libraryDependencies ++= Seq(
   "org.iq80.leveldb"          % "leveldb"                   % "0.12",
   "org.fusesource.leveldbjni" % "leveldbjni-all"            % "1.8",
   "com.github.dnvriend"      %% "akka-persistence-inmemory" % "2.5.15.2",
-  "org.scalatest"            %% "scalatest"                 % "3.2.9"     % "test",
-  "ch.qos.logback"            % "logback-classic"           % "1.2.6"
+  "org.scalatest"            %% "scalatest"                 % "3.2.14"     % "test",
+  "ch.qos.logback"            % "logback-classic"           % "1.4.4"
 )
 
 // scalaFmt
