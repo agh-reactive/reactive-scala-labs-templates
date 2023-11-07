@@ -7,6 +7,8 @@ import akka.event.{Logging, LoggingReceive}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 object Checkout {
 
   sealed trait Data
@@ -37,16 +39,56 @@ class Checkout extends Actor {
   val checkoutTimerDuration = 1 seconds
   val paymentTimerDuration  = 1 seconds
 
-  def receive: Receive = ???
+  private def scheduleCheckoutTimer: Cancellable =
+    scheduler.scheduleOnce(delay = checkoutTimerDuration) {
+      self ! ExpireCheckout
+  }
 
-  def selectingDelivery(timer: Cancellable): Receive = ???
+  private def schedulePaymentTimer: Cancellable =
+    scheduler.scheduleOnce(delay = paymentTimerDuration) {
+      self ! ExpirePayment
+  }
+  def receive: Receive = LoggingReceive {
+    case StartCheckout =>
+      context.become(selectingDelivery(timer = scheduleCheckoutTimer))
+  }
 
-  def selectingPaymentMethod(timer: Cancellable): Receive = ???
 
-  def processingPayment(timer: Cancellable): Receive = ???
+  def selectingDelivery(timer: Cancellable): Receive = LoggingReceive {
+    case SelectDeliveryMethod(method) =>
+      context.become(selectingPaymentMethod(timer = timer))
+    case CancelCheckout | ExpireCheckout  =>
+      context.become(cancelled)
 
-  def cancelled: Receive = ???
+  }
 
-  def closed: Receive = ???
+  def selectingPaymentMethod(timer: Cancellable): Receive = LoggingReceive {
+    case SelectPayment(payment) =>
+      timer.cancel
+      context.become(processingPayment(timer = schedulePaymentTimer))
+
+    case CancelCheckout | ExpireCheckout =>
+      context.become(cancelled)
+  }
+
+  def processingPayment(timer: Cancellable): Receive = LoggingReceive {
+    case ConfirmPaymentReceived =>
+      timer.cancel
+      context.become(closed)
+    case CancelCheckout | ExpirePayment =>
+      context.become(cancelled)
+  }
+
+  def cancelled: Receive = LoggingReceive {
+    case _ =>
+      doNothing()
+  }
+
+  def closed: Receive = LoggingReceive {
+    case _ =>
+      doNothing()
+  }
+
+  private def doNothing(): Unit = {}
 
 }
