@@ -6,20 +6,27 @@ import akka.actor.typed.{ActorRef, Behavior}
 import scala.language.postfixOps
 
 import scala.concurrent.duration._
+import EShop.lab3.OrderManager
 
 object TypedCheckout {
 
   sealed trait Command
-  case object StartCheckout                       extends Command
-  final case class SelectDeliveryMethod(method: String) extends Command
-  case object CancelCheckout                      extends Command
-  case object ExpireCheckout                      extends Command
-  final case class SelectPayment(payment: String)       extends Command
-  case object ExpirePayment                       extends Command
-  case object ConfirmPaymentReceived              extends Command
+  case object StartCheckout                                                                  extends Command
+  case class SelectDeliveryMethod(method: String)                                            extends Command
+  case object CancelCheckout                                                                 extends Command
+  case object ExpireCheckout                                                                 extends Command
+  case class SelectPayment(payment: String, orderManagerRef: ActorRef[OrderManager.Command]) extends Command
+  case object ExpirePayment                                                                  extends Command
+  case object ConfirmPaymentReceived                                                         extends Command
+
+  sealed trait Event
+  case object CheckOutClosed                           extends Event
+  case class PaymentStarted(paymentRef: ActorRef[Any]) extends Event
 }
 
-class TypedCheckout {
+class TypedCheckout(
+  cartActor: ActorRef[TypedCartActor.Command]
+) {
   import TypedCheckout._
 
   val checkoutTimerDuration: FiniteDuration = 1 seconds
