@@ -28,11 +28,11 @@ class OrderManagerIntegrationTest
     message: ActorRef[Any] => OrderManager.Command
   ): Unit = {
     import akka.actor.typed.scaladsl.AskPattern.Askable
-    orderManager.ask[Any](message).mapTo[OrderManager.Ack].futureValue shouldBe Done
+    orderManager.ask[Any](message).mapTo[Unit].futureValue shouldBe ()
   }
 
   it should "supervise whole order process" in {
-    val orderManager = testKit.spawn(new OrderManager().start).ref
+    val orderManager = testKit.spawn(OrderManager())
 
     sendMessage(orderManager, AddItem("rollerblades", _))
 

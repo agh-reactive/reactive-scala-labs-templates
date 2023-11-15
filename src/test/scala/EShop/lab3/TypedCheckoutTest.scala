@@ -16,11 +16,14 @@ class TypedCheckoutTest
 
   import TypedCheckout._
 
-  override def afterAll: Unit =
-    testKit.shutdownTestKit()
+  override def afterAll(): Unit = testKit.shutdownTestKit()
 
   it should "Send close confirmation to cart" in {
-    ???
+    val cartProbe = testKit.createTestProbe[TypedCartActor.Command]()
+    val checkoutActor = testKit.spawn(TypedCheckout(cartProbe.ref))
+
+    checkoutActor ! CancelCheckout
+    cartProbe.expectMessage(TypedCartActor.ConfirmCheckoutCancelled)
   }
 
 }

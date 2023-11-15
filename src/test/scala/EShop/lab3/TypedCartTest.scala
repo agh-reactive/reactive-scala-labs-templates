@@ -14,21 +14,37 @@ class TypedCartTest
   with Matchers
   with ScalaFutures {
 
-  override def afterAll: Unit =
-    testKit.shutdownTestKit()
+  override def afterAll(): Unit = testKit.shutdownTestKit()
 
   import TypedCartActor._
 
-  //use GetItems command which was added to make test easier
   it should "add item properly" in {
-    ???
+    val cartActor = testKit.spawn(TypedCartActor())
+    val probe = testKit.createTestProbe[Cart]()
+    val item = "item"
+
+    cartActor ! AddItem(item)
+    cartActor ! GetItems(probe.ref)
+    probe.expectMessage(Cart(Seq(item)))
   }
 
   it should "be empty after adding and removing the same item" in {
-    ???
+    val cartActor = testKit.spawn(TypedCartActor())
+    val probe = testKit.createTestProbe[Cart]()
+    val item = "item"
+
+    cartActor ! AddItem(item)
+    cartActor ! RemoveItem(item)
+    cartActor ! GetItems(probe.ref)
+    probe.expectMessage(Cart(Seq.empty))
   }
 
   it should "start checkout" in {
-    ???
+    val cartActor = testKit.spawn(TypedCartActor())
+    val probe = testKit.createTestProbe[OrderManager.Command]()
+
+    cartActor ! AddItem("item")
+    cartActor ! StartCheckout(probe.ref)
+    probe.receiveMessage() shouldBe a[OrderManager.ConfirmCheckoutStarted]
   }
 }

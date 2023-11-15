@@ -8,16 +8,19 @@ object Payment {
 
   sealed trait Command
   case object DoPayment extends Command
-}
 
-class Payment(
-  method: String,
-  orderManager: ActorRef[OrderManager.Command],
-  checkout: ActorRef[TypedCheckout.Command]
-) {
-
-  import Payment._
-
-  def start: Behavior[Payment.Command] = ???
+  def apply(
+    method: String,
+    orderManager: ActorRef[OrderManager.Command],
+    checkout: ActorRef[TypedCheckout.Command]
+  ): Behavior[Command] =
+    Behaviors.setup { context =>
+      Behaviors.receiveMessage {
+        case DoPayment =>
+          orderManager ! OrderManager.ConfirmPaymentReceived
+          checkout ! TypedCheckout.ConfirmPaymentReceived
+          Behaviors.same
+      }
+    }
 
 }
